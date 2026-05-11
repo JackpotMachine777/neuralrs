@@ -6,6 +6,7 @@
 //     Bool,
 // }
 
+#[derive(Clone, Debug)]
 pub struct Tensor{
     pub data: Vec<f32>,
     pub shape: Vec<usize>,
@@ -24,23 +25,48 @@ impl Tensor{
         Tensor { data, shape }
     }
 
+    // Adding tensors //
     pub fn add(&self, other: &Tensor) -> Tensor{
-        if self.shape != other.shape{
-            panic!("Shapes are different");
+        if self.shape == other.shape{
+            let mut result = Vec::with_capacity(self.data.len());
+
+            for i in 0..self.data.len(){
+                result.push(self.data[i] + other.data[i]);
+            }
+
+            return Tensor{
+                data: result,
+                shape: self.shape.clone(),
+            };
         }
 
-        let mut result = Vec::with_capacity(self.data.len());
+        if other.shape.len() == 1 && self.shape.len() == 2{
+            let features = other.shape[0];
+            let batch = self.shape[0];
 
-        for i in 0..self.data.len(){
-            result.push(self.data[i] + other.data[i]);
+            if self.shape[1] != features{
+                panic!("Broadcast failed: feature size mismatch");
+            }
+
+            let mut res = Vec::with_capacity(self.data.len());
+
+            for b in 0..batch{
+                for f in 0..features{
+                    let i = b * features + f;
+                    res.push(self.data[i] + other.data[f]);
+                }
+            }
+
+            return Tensor{
+                data: res,
+                shape: self.shape.clone(),
+            }
         }
 
-        Tensor {
-            data: result,
-            shape: self.shape.clone(),
-        }
+        panic!("Shapes are not compatible for add");
     }
 
+    // Multiplying tensors //
     pub fn mul(&self, other: &Tensor) -> Tensor{
         if self.shape != other.shape{
             panic!("Shapes are different");
