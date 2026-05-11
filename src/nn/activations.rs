@@ -4,7 +4,7 @@ use crate::nn::module::Module;
 pub struct ReLU;
 
 impl Module for ReLU {
-    fn forward(&self, input: &Tensor) -> Tensor {
+    fn forward(&mut self, input: &Tensor) -> Tensor {
         let mut out = Vec::with_capacity(input.data.len());
 
         for &x in &input.data {
@@ -17,7 +17,12 @@ impl Module for ReLU {
 
         Tensor {
             data: out,
+            grad: vec![0.0; input.data.len()],
             shape: input.shape.clone(),
         }
+    }
+
+    fn backward(&mut self, grad_output: &Tensor) -> Tensor{
+        grad_output.clone()
     }
 }

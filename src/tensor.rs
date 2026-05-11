@@ -9,6 +9,7 @@
 #[derive(Clone, Debug)]
 pub struct Tensor{
     pub data: Vec<f32>,
+    pub grad: Vec<f32>,
     pub shape: Vec<usize>,
     // dtype: DType,
 }
@@ -22,7 +23,8 @@ impl Tensor{
             panic!("Shape does not match data size");
         }
 
-        Tensor { data, shape }
+        let len = data.len();
+        Tensor { data, grad: vec![0.0; len], shape }
     }
 
     // Adding tensors //
@@ -36,6 +38,7 @@ impl Tensor{
 
             return Tensor{
                 data: result,
+                grad: vec![0.0; self.data.len()],
                 shape: self.shape.clone(),
             };
         }
@@ -59,6 +62,7 @@ impl Tensor{
 
             return Tensor{
                 data: res,
+                grad: vec![0.0; self.data.len()],
                 shape: self.shape.clone(),
             }
         }
@@ -80,6 +84,7 @@ impl Tensor{
 
         Tensor {
             data: result,
+            grad: vec![0.0; self.data.len()],
             shape: self.shape.clone(),
         }
     }
