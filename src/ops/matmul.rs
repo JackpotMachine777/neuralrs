@@ -27,7 +27,7 @@ pub fn matmul(a: &Tensor, b: &Tensor) -> Tensor{
 
         Tensor {
             data: res,
-            grad: vec![0.0; a.data.len()],
+            grad: vec![0.0; m * n],
             shape: vec![m, n],
         }
     }

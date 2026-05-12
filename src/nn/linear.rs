@@ -50,4 +50,13 @@ impl Module for Linear{
 
         grad_input
     }
+
+    fn parameters(&mut self) -> Vec<&mut Tensor>{
+        vec![&mut self.weights, &mut self.bias]
+    }
+
+    fn zero_grad(&mut self){
+        self.weights.grad = vec![0.0; self.weights.data.len()];
+        self.bias.grad = vec![0.0; self.bias.data.len()];
+    }
 }

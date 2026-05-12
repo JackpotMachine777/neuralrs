@@ -25,4 +25,20 @@ impl Module for Sequential{
 
         grad
     }
+
+    fn parameters(&mut self) -> Vec<&mut Tensor> {
+        let mut params = vec![];
+
+        for layer in &mut self.list{
+            params.extend(layer.parameters());
+        }
+
+        params
+    }
+
+    fn zero_grad(&mut self){
+        for layer in &mut self.list{
+            layer.zero_grad();
+        }
+    }
 }
