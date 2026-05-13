@@ -28,7 +28,11 @@ fn prototype_model_test(){
 
     let input = Tensor::new(vec![1.0, 2.0], vec![1, 2]);
     let target = Tensor::new(vec![0.0, 1.0], vec![1, 2]);
-    let sgd = SGD { lr: 0.001 };
+    let mut sgd = SGD { 
+        lr: 0.001,
+        momentum: 0.5,
+        velocity: vec![], 
+    };
 
     for epoch in 0..100{
         model.zero_grad();
