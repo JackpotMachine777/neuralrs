@@ -2,7 +2,7 @@ use rstorch::tensor::Tensor;
 use rstorch::nn::module::Module;
 use rstorch::nn::linear::Linear;
 use rstorch::nn::sequential::Sequential;
-use rstorch::ops::elementwise::{mse, mse_grad};
+use rstorch::ops::elementwise::mse::{mse, mse_grad}
 use rstorch::optim::sgd::SGD;
 use rstorch::nn::activations::relu::ReLU;
 

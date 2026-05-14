@@ -2,7 +2,7 @@ use crate::tensor::Tensor;
 use crate::nn::module::Module;
 
 use crate::ops::matmul::matmul;
-use crate::ops::elementwise::add_vec;
+use crate::ops::elementwise::arithmetic::add_vec;
 use crate::ops::shape::transpose;
 
 pub struct Linear{
