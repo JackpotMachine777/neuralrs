@@ -4,7 +4,7 @@ use rstorch::nn::linear::Linear;
 use rstorch::nn::sequential::Sequential;
 use rstorch::ops::elementwise::{mse, mse_grad};
 use rstorch::optim::sgd::SGD;
-use rstorch::nn::activations::ReLU;
+use rstorch::nn::activations::relu::ReLU;
 
 #[test]
 fn prototype_model_test(){

@@ -1,7 +1,7 @@
 use rstorch::tensor::Tensor;
 use rstorch::nn::{module::Module, sequential::Sequential};
 use rstorch::nn::linear::Linear;
-use rstorch::nn::activations::ReLU;
+use rstorch::nn::activations::relu::ReLU;
 
 #[test]
 fn sequential_forward_test() {
