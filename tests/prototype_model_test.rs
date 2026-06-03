@@ -2,16 +2,17 @@ use rstorch::tensor::Tensor;
 use rstorch::nn::module::Module;
 use rstorch::nn::linear::Linear;
 use rstorch::nn::sequential::Sequential;
-use rstorch::ops::elementwise::mse::{mse, mse_grad}
+use rstorch::ops::elementwise::mse::{mse, mse_grad};
 use rstorch::optim::sgd::SGD;
 use rstorch::nn::activations::relu::ReLU;
+use rstorch::init::he;
 
 #[test]
 fn prototype_model_test(){
     let mut model = Sequential{
         list: vec![
             Box::new(Linear{
-                weights: Tensor::new(vec![1.0, 2.0, 3.0, 4.0], vec![2, 2]),
+                weights: Tensor::new(he::he(2, 2), vec![2, 2]),
                 bias: Tensor::new(vec![-2.0, 0.0], vec![2]),
                 last_input: None,
             }),
@@ -19,7 +20,7 @@ fn prototype_model_test(){
                 last_input: None,
             }),
             Box::new(Linear {
-                weights: Tensor::new(vec![1.0, 0.0, -4.0, 1.0], vec![2, 2]),
+                weights: Tensor::new(he::he(2, 2), vec![2, 2]),
                 bias: Tensor::new(vec![0.0, 0.0], vec![2]),
                 last_input: None,
             }),
