@@ -1,6 +1,6 @@
-use rstorch::tensor::Tensor;
 use rstorch::nn::module::Module;
 use rstorch::nn::dropout::Dropout;
+use rstorch::autograd::node::Node;
 
 #[test]
 fn dropout_test(){
@@ -10,11 +10,9 @@ fn dropout_test(){
         training: true,
     };
 
-    let input = Tensor::new(vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0], vec![2, 3]);
-    let output = layer.forward(&input);
+    let input = Node::new(vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0], vec![2, 3]);
+    let output = layer.forward(input);
 
-    println!("input:  {:?}", input.data);
-    println!("output: {:?}", output.data);
-
-    assert_eq!(output.shape, input.shape);
+    println!("output: {:?}", output.borrow().data);
+    assert_eq!(output.borrow().shape, vec![2, 3]);
 }

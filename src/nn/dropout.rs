@@ -1,5 +1,8 @@
-use crate::nn::module::Module;
 use crate::tensor::Tensor;
+use crate::nn::module::Module;
+use std::rc::Rc;
+use std::cell::RefCell;
+use crate::autograd::node::Node;
 
 pub struct Dropout{
     pub probability: f32,
@@ -8,12 +11,13 @@ pub struct Dropout{
 }
 
 impl Module for Dropout{
-    fn forward(&mut self, input: &Tensor) -> Tensor {
+    fn forward(&mut self, input: Rc<RefCell<Node>>) -> Rc<RefCell<Node>> {
         if self.training == false { return input.clone(); }
 
-        let mut out = Vec::with_capacity(input.data.len());
+        let mut out = Vec::with_capacity(input.borrow().data.len());
+        self.mask.clear();
 
-        for &x in &input.data {
+        for &x in &input.borrow().data {
             let n = rand::random::<f32>();
 
             if n < self.probability { 
@@ -26,25 +30,8 @@ impl Module for Dropout{
             }
         }
 
-        Tensor {
-            data: out,
-            grad: vec![0.0; input.data.len()],
-            shape: input.shape.clone(),
-        }
-    }
-
-    fn backward(&mut self, grad_output: &Tensor) -> Tensor {
-        let mut out = Vec::with_capacity(grad_output.data.len());
-
-        for i in 0..grad_output.data.len(){
-            out.push(grad_output.data[i] * self.mask[i]);
-        }
-
-        Tensor {
-            data: out,
-            grad: grad_output.grad.clone(),
-            shape: grad_output.shape.clone(),
-        }
+        let shape = input.borrow().shape.clone();
+        Node::new(out, shape)
     }
 
     fn parameters(&mut self) -> Vec<&mut Tensor> { vec![] }

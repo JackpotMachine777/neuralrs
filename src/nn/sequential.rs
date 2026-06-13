@@ -1,29 +1,22 @@
 use crate::tensor::Tensor;
- use crate::nn::module::Module;
+use crate::nn::module::Module;
+use std::rc::Rc;
+use std::cell::RefCell;
+use crate::autograd::node::Node;
 
 pub struct Sequential{
     pub list: Vec<Box<dyn Module>>
 }
 
 impl Module for Sequential{
-    fn forward(&mut self, input: &Tensor) -> Tensor{
-        let mut current = input.clone();
+    fn forward(&mut self, input: Rc<RefCell<Node>>) -> Rc<RefCell<Node>> {
+        let mut current = input;
 
         for layer in &mut self.list{
-            current = layer.forward(&current);
+            current = layer.forward(current);
         }
 
         current
-    }
-
-    fn backward(&mut self, grad_output: &Tensor) -> Tensor{
-        let mut grad = grad_output.clone();
-
-        for layer in self.list.iter_mut().rev(){
-            grad = layer.backward(&grad);
-        }
-
-        grad
     }
 
     fn parameters(&mut self) -> Vec<&mut Tensor> {
@@ -36,9 +29,15 @@ impl Module for Sequential{
         params
     }
 
-    fn zero_grad(&mut self){
+    fn zero_grad(&mut self) {
         for layer in &mut self.list{
             layer.zero_grad();
+        }
+    }
+
+    fn sync_grads(&mut self) {
+        for layer in &mut self.list {
+            layer.sync_grads();
         }
     }
 }
