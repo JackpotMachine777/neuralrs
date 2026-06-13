@@ -1,0 +1,26 @@
+use rstorch::tensor::Tensor;
+use rstorch::nn::module::Module;
+use rstorch::nn::batchnorm::BatchNorm;
+use rstorch::autograd::node::Node;
+
+#[test]
+fn batchnorm_test(){
+    let mut layer = BatchNorm {
+        gamma: Tensor::new(vec![1.0, 1.0], vec![2]),
+        beta: Tensor::new(vec![0.0, 0.0], vec![2]),
+        epsilon: 1e-5,
+        num_features: 2,
+    };
+
+    let input = Node::new(vec![1.0, 2.0, 3.0, 4.0], vec![2, 2]);
+    let output = layer.forward(input.clone());
+
+    println!("input:  {:?}", input.borrow().data);
+    println!("output: {:?}", output.borrow().data);
+
+    assert_eq!(output.borrow().shape, vec![2, 2]);
+
+    let mean: f32 = output.borrow().data.iter().sum::<f32>() / output.borrow().data.len() as f32;
+    println!("mean: {}", mean);
+    assert!(mean.abs() < 1e-5);
+}
