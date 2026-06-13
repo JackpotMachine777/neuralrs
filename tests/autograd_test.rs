@@ -1,4 +1,6 @@
-use rstorch::autograd::{node::Node, graph, engine};
+use rstorch::autograd::node::Node;
+use rstorch::autograd::graph;
+use rstorch::autograd::engine;
 
 #[test]
 fn autograd_add_test() {
@@ -46,4 +48,22 @@ fn autograd_relu_test() {
     println!("a.grad: {:?}", a.borrow().grad);
     
     assert_eq!(a.borrow().grad, vec![1.0, 0.0]);
+}
+
+#[test]
+fn autograd_matmul_test() {
+    let a = Node::new(vec![1.0, 2.0, 3.0, 4.0], vec![2, 2]);
+    let b = Node::new(vec![1.0, 0.0, 0.0, 1.0], vec![2, 2]);
+
+    let c = graph::matmul(a.clone(), b.clone());
+
+    engine::backward(c.clone());
+
+    println!("[MATMUL TEST]");
+    println!("a.grad: {:?}", a.borrow().grad);
+    println!("b.grad: {:?}", b.borrow().grad);
+    println!("c.data: {:?}", c.borrow().data);
+
+    // c = a * I wiec c.data == a.data
+    assert_eq!(c.borrow().data, vec![1.0, 2.0, 3.0, 4.0]);
 }
