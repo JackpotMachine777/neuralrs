@@ -7,3 +7,4 @@ pub mod module;
 pub mod normalization;
 pub mod sequential;
 pub mod flatten;
+pub mod maxpool;
