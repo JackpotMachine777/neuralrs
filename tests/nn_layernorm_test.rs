@@ -10,9 +10,10 @@ fn layernorm_test(){
         beta: Tensor::new(vec![0.0, 0.0], vec![2]),
         epsilon: 1e-5,
         num_features: 2,
+        gamma_grad: std::rc::Rc::new(std::cell::RefCell::new(vec![0.0; 2])),
+        beta_grad: std::rc::Rc::new(std::cell::RefCell::new(vec![0.0; 2])),
     };
 
-    // batch=2, features=2 — drugi wiersz ma 10x wieksze wartosci
     let input = Node::new(vec![1.0, 2.0, 10.0, 20.0], vec![2, 2]);
     let output = layer.forward(input.clone());
 

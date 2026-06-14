@@ -1,4 +1,3 @@
-// adam_test.rs
 use rstorch::tensor::Tensor;
 use rstorch::nn::module::Module;
 use rstorch::nn::linear::Linear;

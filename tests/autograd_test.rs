@@ -64,6 +64,5 @@ fn autograd_matmul_test() {
     println!("b.grad: {:?}", b.borrow().grad);
     println!("c.data: {:?}", c.borrow().data);
 
-    // c = a * I wiec c.data == a.data
     assert_eq!(c.borrow().data, vec![1.0, 2.0, 3.0, 4.0]);
 }
