@@ -3,6 +3,7 @@ use crate::nn::module::Module;
 use crate::autograd::node::Node;
 use std::rc::Rc;
 use std::cell::RefCell;
+use rayon::prelude::*;
 
 pub struct Conv2d {
     pub weight: Tensor,
@@ -38,32 +39,28 @@ impl Module for Conv2d {
 
         let mut out = vec![0.0; c_out * out_h * out_w];
 
-        for oc in 0..c_out {
-            for oy in 0..out_h {
-                for ox in 0..out_w {
-                    let mut sum = 0.0;
-
-                    for ic in 0..c_in {
-                        for i in 0..kh {
-                            for j in 0..kw {
-                                let iy = oy * stride + i;
-                                let ix = ox * stride + j;
-
-                                let in_idx = (ic * in_h + iy) * in_w + ix;
-                                let w_idx = ((oc * c_in + ic) * kh + i) * kw + j;
-
-                                sum += data[in_idx] * weight[w_idx];
+        out.par_chunks_mut(out_h * out_w)
+            .enumerate()
+            .for_each(|(oc, out_map)| {
+                for oy in 0..out_h {
+                    for ox in 0..out_w {
+                        let mut sum = 0.0;
+                        for ic in 0..c_in {
+                            for i in 0..kh {
+                                for j in 0..kw {
+                                    let iy = oy * stride + i;
+                                    let ix = ox * stride + j;
+                                    let in_idx = (ic * in_h + iy) * in_w + ix;
+                                    let w_idx = ((oc * c_in + ic) * kh + i) * kw + j;
+                                    sum += data[in_idx] * weight[w_idx];
+                                }
                             }
                         }
+                        sum += bias[oc];
+                        out_map[oy * out_w + ox] = sum;
                     }
-
-                    sum += bias[oc];
-
-                    let out_idx = (oc * out_h + oy) * out_w + ox;
-                    out[out_idx] = sum;
                 }
-            }
-        }
+            });
 
         let result = Node::new(out, vec![c_out, out_h, out_w]);
 
