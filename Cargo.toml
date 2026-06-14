@@ -14,3 +14,7 @@ rayon = "1.10"
 [[bench]]
 name = "matmul_bench"
 harness = false
+
+[[bench]]
+name = "conv_bench"
+harness = false
