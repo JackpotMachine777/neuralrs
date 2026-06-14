@@ -1,6 +1,5 @@
 pub mod dtype;
 pub mod device;
-pub mod shape;
 pub mod storage;
 pub mod tensor;
 pub mod tensor_impl;
