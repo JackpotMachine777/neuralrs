@@ -1,4 +1,6 @@
 use crate::tensor::Tensor;
+use crate::storage::Storage;
+use crate::dtype::DType;
 
 pub fn matmul(a: &Tensor, b: &Tensor) -> Tensor{
         let m = a.shape[0];
@@ -16,8 +18,8 @@ pub fn matmul(a: &Tensor, b: &Tensor) -> Tensor{
                 let mut sum = 0.0;
 
                 for t in 0..k{
-                    let x = a.data[i * k + t];
-                    let y = b.data[t * n + j];
+                    let x = a.storage.data[i * k + t];
+                    let y = b.storage.data[t * n + j];
                     sum += x * y;
                 }
 
@@ -26,8 +28,9 @@ pub fn matmul(a: &Tensor, b: &Tensor) -> Tensor{
         }
 
         Tensor {
-            data: res,
+            storage: Storage::new(res),
             grad: vec![0.0; m * n],
             shape: vec![m, n],
+            dtype: DType::Float32,
         }
     }

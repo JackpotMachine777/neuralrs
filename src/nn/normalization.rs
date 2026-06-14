@@ -28,7 +28,7 @@ impl Module for LayerNorm {
             for f in 0..features {
                 let idx = b * features + f;
                 let x_norm = (data[idx] - mean) / (var + self.epsilon).sqrt();
-                out[idx] = self.gamma.data[f] * x_norm + self.beta.data[f];
+                out[idx] = self.gamma.storage.data[f] * x_norm + self.beta.storage.data[f];
             }
         }
 
@@ -38,7 +38,7 @@ impl Module for LayerNorm {
     fn parameters(&mut self) -> Vec<&mut Tensor> { vec![&mut self.gamma, &mut self.beta] }
 
     fn zero_grad(&mut self) { 
-        self.gamma.grad = vec![0.0; self.gamma.data.len()];
-        self.beta.grad = vec![0.0; self.beta.data.len()];
+        self.gamma.grad = vec![0.0; self.gamma.storage.data.len()];
+        self.beta.grad = vec![0.0; self.beta.storage.data.len()];
     }
 }

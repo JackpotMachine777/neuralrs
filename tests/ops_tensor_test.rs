@@ -6,7 +6,7 @@ fn tensor_creation() {
     let t = Tensor::new(vec![1.0, 2.0, 3.0, 4.0], vec![2, 2]);
 
     assert_eq!(t.shape, vec![2, 2]);
-    assert_eq!(t.data, vec![1.0, 2.0, 3.0, 4.0]);
+    assert_eq!(t.storage.data, vec![1.0, 2.0, 3.0, 4.0]);
 }
 
 #[test]
@@ -16,7 +16,7 @@ fn tensor_add() {
 
     let c = a.add(&b);
 
-    assert_eq!(c.data, vec![6.0, 8.0, 10.0, 12.0]);
+    assert_eq!(c.storage.data, vec![6.0, 8.0, 10.0, 12.0]);
 }
 
 #[test]
@@ -26,7 +26,7 @@ fn tensor_mul() {
 
     let c = a.mul(&b);
 
-    assert_eq!(c.data, vec![3.0, 8.0]);
+    assert_eq!(c.storage.data, vec![3.0, 8.0]);
 }
 
 #[test]
@@ -36,7 +36,7 @@ fn tensor_matmul() {
 
     let c = matmul(&a, &b);
 
-    assert_eq!(c.data, vec![19.0, 22.0, 43.0, 50.0]);
+    assert_eq!(c.storage.data, vec![19.0, 22.0, 43.0, 50.0]);
 }
 
 #[test]

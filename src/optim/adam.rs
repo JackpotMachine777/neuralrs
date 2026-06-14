@@ -19,7 +19,7 @@ impl ADAM{
             let mut item = w[i].parameters();
 
             for j in 0..item.len(){
-                for k in 0..item[j].data.len(){
+                for k in 0..item[j].storage.data.len(){
                     if self.t == 0 {
                         self.m.push(0.0);
                         self.v.push(0.0);
@@ -31,7 +31,7 @@ impl ADAM{
                     let m_hat = self.m[idx] / (1.0 - self.beta1.powi(self.t as i32 + 1));
                     let v_hat = self.v[idx] / (1.0 - self.beta2.powi(self.t as i32 + 1));
 
-                    item[j].data[k] = item[j].data[k] - self.lr * m_hat / (v_hat.sqrt() + self.epsilon);
+                    item[j].storage.data[k] = item[j].storage.data[k] - self.lr * m_hat / (v_hat.sqrt() + self.epsilon);
 
                     idx += 1;
                 }

@@ -1,5 +1,6 @@
 use crate::device::Device;
 
+#[derive(Clone, Debug)]
 pub struct Storage {
     pub data: Vec<f32>,
     pub device: Device,

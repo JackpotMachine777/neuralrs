@@ -3,8 +3,8 @@ use crate::tensor::Tensor;
 pub fn sum(t: &Tensor) -> f32 {
     let mut out = 0.0;
 
-    for i in 0..t.data.len(){
-        out += t.data[i];
+    for i in 0..t.storage.data.len(){
+        out += t.storage.data[i];
     }
 
     out
@@ -13,9 +13,9 @@ pub fn sum(t: &Tensor) -> f32 {
 pub fn mean(t: &Tensor) -> f32 {
     let mut out = 0.0;
 
-    for i in 0..t.data.len(){
-        out += t.data[i];
+    for i in 0..t.storage.data.len(){
+        out += t.storage.data[i];
     }
 
-    out / t.data.len() as f32
+    out / t.storage.data.len() as f32
 }

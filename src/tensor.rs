@@ -1,7 +1,10 @@
+use crate::storage::Storage;
+use crate::dtype::DType;
+
 #[derive(Clone, Debug)]
-pub struct Tensor{
-    pub data: Vec<f32>,
+pub struct Tensor {
+    pub storage: Storage,
     pub grad: Vec<f32>,
     pub shape: Vec<usize>,
-    // dtype: DType,
+    pub dtype: DType,
 }

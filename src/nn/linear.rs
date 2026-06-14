@@ -14,8 +14,8 @@ pub struct Linear{
 
 impl Module for Linear{
     fn forward(&mut self, input: Rc<RefCell<Node>>) -> Rc<RefCell<Node>>{
-        let w = Node::new(self.weights.data.clone(), self.weights.shape.clone());
-        let b = Node::new(self.bias.data.clone(), self.bias.shape.clone());
+        let w = Node::new(self.weights.storage.data.clone(), self.weights.shape.clone());
+        let b = Node::new(self.bias.storage.data.clone(), self.bias.shape.clone());
         self.weights_node = Some(w.clone());
         self.bias_node = Some(b.clone());
 
@@ -28,8 +28,8 @@ impl Module for Linear{
     }
 
     fn zero_grad(&mut self){
-        self.weights.grad = vec![0.0; self.weights.data.len()];
-        self.bias.grad = vec![0.0; self.bias.data.len()];
+        self.weights.grad = vec![0.0; self.weights.storage.data.len()];
+        self.bias.grad = vec![0.0; self.bias.storage.data.len()];
     }
 
     fn sync_grads(&mut self) {

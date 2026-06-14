@@ -15,5 +15,5 @@ fn matmul_basic() {
 
     let c = matmul(&a, &b);
 
-    assert_eq!(c.data, vec![19.0, 22.0, 43.0, 50.0]);
+    assert_eq!(c.storage.data, vec![19.0, 22.0, 43.0, 50.0]);
 }

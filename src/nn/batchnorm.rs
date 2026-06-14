@@ -21,7 +21,7 @@ impl Module for BatchNorm {
         
         let out: Vec<f32> = data.iter().enumerate().map(|(i, &x)| {
             let x_norm = (x - mean) / (var + self.epsilon).sqrt();
-            self.gamma.data[i % self.num_features] * x_norm + self.beta.data[i % self.num_features]
+            self.gamma.storage.data[i % self.num_features] * x_norm + self.beta.storage.data[i % self.num_features]
         }).collect();
 
         let shape = input.borrow().shape.clone();
@@ -31,7 +31,7 @@ impl Module for BatchNorm {
     fn parameters(&mut self) -> Vec<&mut Tensor> { vec![&mut self.gamma, &mut self.beta] }
 
     fn zero_grad(&mut self) { 
-        self.gamma.grad = vec![0.0; self.gamma.data.len()];
-        self.beta.grad = vec![0.0; self.beta.data.len()];
+        self.gamma.grad = vec![0.0; self.gamma.storage.data.len()];
+        self.beta.grad = vec![0.0; self.beta.storage.data.len()];
     }
 }

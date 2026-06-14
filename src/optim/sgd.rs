@@ -14,13 +14,13 @@ impl SGD{
             let mut item = w[i].parameters();
 
             for j in 0..item.len(){
-                for k in 0..item[j].data.len(){
+                for k in 0..item[j].storage.data.len(){
                     if self.velocity.len() <= idx{
                         self.velocity.push(0.0);
                     }
 
                     self.velocity[idx] = self.momentum * self.velocity[idx]  + item[j].grad[k];
-                    item[j].data[k] = item[j].data[k] - self.lr * self.velocity[idx];
+                    item[j].storage.data[k] = item[j].storage.data[k] - self.lr * self.velocity[idx];
 
                     idx += 1;
                 }

@@ -10,7 +10,7 @@ fn bce_test(){
     let grad = bce_grad(&pred, &target);
 
     println!("BCE loss: {}", loss);
-    println!("BCE grad: {:?}", grad.data);
+    println!("BCE grad: {:?}", grad.storage.data);
 
     assert!(loss > 0.0);
     assert_eq!(grad.shape, vec![2]);

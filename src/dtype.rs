@@ -1,3 +1,4 @@
+#[derive(Clone, Debug, PartialEq)]
 pub enum DType{
     Float32,
     Float64,

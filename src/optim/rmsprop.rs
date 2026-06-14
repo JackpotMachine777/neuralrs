@@ -15,11 +15,11 @@ impl RMSProp{
             let mut item = w[i].parameters();
 
             for j in 0..item.len(){
-                for k in 0..item[j].data.len(){
+                for k in 0..item[j].storage.data.len(){
                     if self.v.len() <= idx { self.v.push(0.0); }
 
                     self.v[idx] = self.beta * self.v[idx] + (1.0 - self.beta) * item[j].grad[k] * item[j].grad[k];
-                    item[j].data[k] = item[j].data[k] - self.lr * item[j].grad[k] / (self.v[idx].sqrt() + self.epsilon);
+                    item[j].storage.data[k] = item[j].storage.data[k] - self.lr * item[j].grad[k] / (self.v[idx].sqrt() + self.epsilon);
 
                     idx += 1;
                 }
