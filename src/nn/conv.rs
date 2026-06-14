@@ -65,9 +65,56 @@ impl Module for Conv2d {
             }
         }
 
-        let shape = vec![c_out, out_h, out_w];
+        let result = Node::new(out, vec![c_out, out_h, out_w]);
 
-        Node::new(out, shape)
+        {
+            let mut node = result.borrow_mut();
+            node.parents = vec![input.clone()];
+        }
+
+        let input_clone = input.clone();
+        let weight_clone = weight.clone();
+        let data_clone = data.clone();
+        let weight_grad_buf = self.weight_grad.clone();
+        let bias_grad_buf = self.bias_grad.clone();
+
+        result.borrow_mut().backward_fn = Some(Box::new(move |grad: &Vec<f32>| {
+            let mut w_grad = vec![0.0; c_out * c_in * kh * kw];
+            let mut b_grad = vec![0.0; c_out];
+
+            for oc in 0..c_out {
+                for oy in 0..out_h {
+                    for ox in 0..out_w {
+                        let out_idx = (oc * out_h + oy) * out_w + ox;
+                        let g = grad[out_idx];
+
+                        b_grad[oc] += g;
+
+                        for ic in 0..c_in {
+                            for i in 0..kh {
+                                for j in 0..kw {
+                                    let iy = oy * stride + i;
+                                    let ix = ox * stride + j;
+                                    let in_idx = (ic * in_h + iy) * in_w + ix;
+                                    let w_idx = ((oc * c_in + ic) * kh + i) * kw + j;
+
+                                    w_grad[w_idx] += g * data_clone[in_idx];
+                                    input_clone.borrow_mut().grad[in_idx] += g * weight_clone[w_idx];
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            let mut wg = weight_grad_buf.borrow_mut();
+            let mut bg = bias_grad_buf.borrow_mut();
+
+            for k in 0..w_grad.len() { wg[k] += w_grad[k]; }
+            for k in 0..b_grad.len() { bg[k] += b_grad[k]; }
+        }));
+
+        result
     }
 
     fn parameters(&mut self) -> Vec<&mut Tensor> {
@@ -77,5 +124,12 @@ impl Module for Conv2d {
     fn zero_grad(&mut self) {
         self.weight.grad = vec![0.0; self.weight.storage.data.len()];
         self.bias.grad = vec![0.0; self.bias.storage.data.len()];
+        *self.weight_grad.borrow_mut() = vec![0.0; self.weight.storage.data.len()];
+        *self.bias_grad.borrow_mut() = vec![0.0; self.bias.storage.data.len()];
+    }
+
+    fn sync_grads(&mut self) {
+        self.weight.grad = self.weight_grad.borrow().clone();
+        self.bias.grad = self.bias_grad.borrow().clone();
     }
 }
