@@ -1,0 +1,32 @@
+use crate::tensor::Tensor;
+use crate::nn::module::Module;
+use crate::autograd::node::Node;
+use std::rc::Rc;
+use std::cell::RefCell;
+
+pub struct Flatten { }
+
+impl Module for Flatten {
+    fn forward(&mut self, input: Rc<RefCell<Node>>) -> Rc<RefCell<Node>> {
+        let data = input.borrow().data.clone();
+        let len = data.len();
+
+        let result = Node::new(data, vec![1, len]);
+
+        {
+            let mut node = result.borrow_mut();
+            node.parents = vec![input.clone()];
+        }
+
+        let input_clone = input.clone();
+        result.borrow_mut().backward_fn = Some(Box::new(move |grad: &Vec<f32>| {
+            for i in 0..grad.len() { input_clone.borrow_mut().grad[i] += grad[i]; }
+        }));
+
+        result
+    }
+
+    fn parameters(&mut self) -> Vec<&mut Tensor> { vec![] }
+
+    fn zero_grad(&mut self) {}
+}

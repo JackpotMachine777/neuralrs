@@ -6,3 +6,4 @@ pub mod linear;
 pub mod module;
 pub mod normalization;
 pub mod sequential;
+pub mod flatten;
