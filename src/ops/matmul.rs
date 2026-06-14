@@ -1,6 +1,7 @@
 use crate::tensor::Tensor;
 use crate::storage::Storage;
 use crate::dtype::DType;
+use rayon::prelude::*;
 
 pub fn matmul(a: &Tensor, b: &Tensor) -> Tensor{
         let m = a.shape[0];
@@ -13,20 +14,23 @@ pub fn matmul(a: &Tensor, b: &Tensor) -> Tensor{
 
         let mut res = vec![0.0; m * n];
 
-        for i in 0..m{
-            for j in 0..n{
-                let mut sum = 0.0;
+        let a_data = &a.storage.data;
+        let b_data = &b.storage.data;
 
-                for t in 0..k{
-                    let x = a.storage.data[i * k + t];
-                    let y = b.storage.data[t * n + j];
-                    sum += x * y;
+        res.par_chunks_mut(n)
+            .enumerate()
+            .for_each(|(i, row)| {
+                for j in 0..n {
+                    let mut sum = 0.0;
+                    for t in 0..k {
+                        let x = a_data[i * k + t];
+                        let y = b_data[t * n + j];
+                        sum += x * y;
+                    }
+                    row[j] = sum;
                 }
-
-                res[i * n + j] = sum;
-            }
-        }
-
+            });
+        
         Tensor {
             storage: Storage::new(res),
             grad: vec![0.0; m * n],
