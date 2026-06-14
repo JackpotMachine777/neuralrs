@@ -17,6 +17,7 @@ fn conv2d_forward_test() {
         in_w: 3,
         weight_grad: std::rc::Rc::new(std::cell::RefCell::new(vec![0.0; 4])),
         bias_grad: std::rc::Rc::new(std::cell::RefCell::new(vec![0.0; 1])),
+        padding: 0,
     };
 
     let input = Node::new(vec![
@@ -51,6 +52,7 @@ fn conv2d_multichannel_test() {
         in_w: 2,
         weight_grad: std::rc::Rc::new(std::cell::RefCell::new(vec![0.0; 16])),
         bias_grad: std::rc::Rc::new(std::cell::RefCell::new(vec![0.0; 2])),
+        padding: 0,
     };
 
     let input = Node::new(vec![

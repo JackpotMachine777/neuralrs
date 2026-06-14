@@ -19,6 +19,7 @@ fn cnn_end_to_end() {
         in_h: 4, in_w: 4,
         weight_grad: Rc::new(RefCell::new(vec![0.0; 8])),
         bias_grad: Rc::new(RefCell::new(vec![0.0; 2])),
+        padding: 0,
     };
     let mut relu = ReLU {};
     let mut pool = MaxPool2d { kernel: 2, stride: 1, channels: 2, in_h: 3, in_w: 3 };
