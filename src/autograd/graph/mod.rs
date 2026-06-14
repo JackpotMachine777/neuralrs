@@ -10,3 +10,6 @@ pub mod sub;        pub use sub::sub;
 pub mod div;        pub use div::div;
 pub mod exp;        pub use exp::exp;
 pub mod pow;        pub use pow::pow;
+pub mod log;        pub use log::log;
+pub mod sqrt;        pub use sqrt::sqrt;
+pub mod abs;        pub use abs::abs;

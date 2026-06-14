@@ -86,3 +86,60 @@ fn gradcheck_pow() {
     }
     println!("pow ok");
 }
+
+#[test]
+fn gradcheck_log() {
+    use rstorch::autograd::graph::log;
+    let a_data = vec![1.0, 2.0, 5.0];
+    let a = Node::new(a_data.clone(), vec![3]);
+    let c = log::log(a.clone());
+    engine::backward(c);
+    let ga = a.borrow().grad.clone();
+
+    let num = num_grad_unary(&a_data, |ain| ain.iter().map(|x| x.ln()).collect());
+
+    println!("log analytic: {:?}", ga);
+    println!("log numeric:  {:?}", num);
+    for i in 0..3 {
+        assert!((ga[i] - num[i]).abs() < 1e-2, "log mismatch at {}", i);
+    }
+    println!("log ok");
+}
+
+#[test]
+fn gradcheck_sqrt() {
+    use rstorch::autograd::graph::sqrt;
+    let a_data = vec![1.0, 4.0, 9.0];
+    let a = Node::new(a_data.clone(), vec![3]);
+    let c = sqrt::sqrt(a.clone());
+    engine::backward(c);
+    let ga = a.borrow().grad.clone();
+
+    let num = num_grad_unary(&a_data, |ain| ain.iter().map(|x| x.sqrt()).collect());
+
+    println!("sqrt analytic: {:?}", ga);
+    println!("sqrt numeric:  {:?}", num);
+    for i in 0..3 {
+        assert!((ga[i] - num[i]).abs() < 1e-2, "sqrt mismatch at {}", i);
+    }
+    println!("sqrt ok");
+}
+
+#[test]
+fn gradcheck_abs() {
+    use rstorch::autograd::graph::abs;
+    let a_data = vec![2.0, -3.0, 5.0];
+    let a = Node::new(a_data.clone(), vec![3]);
+    let c = abs::abs(a.clone());
+    engine::backward(c);
+    let ga = a.borrow().grad.clone();
+
+    let num = num_grad_unary(&a_data, |ain| ain.iter().map(|x| x.abs()).collect());
+
+    println!("abs analytic: {:?}", ga);
+    println!("abs numeric:  {:?}", num);
+    for i in 0..3 {
+        assert!((ga[i] - num[i]).abs() < 1e-2, "abs mismatch at {}", i);
+    }
+    println!("abs ok");
+}
