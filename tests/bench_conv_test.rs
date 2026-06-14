@@ -8,7 +8,6 @@ use std::time::Instant;
 
 #[test]
 fn bench_conv() {
-    // realniejszy rozmiar: 16 kanalow wej, 32 filtry, obraz 64x64, filtr 3x3
     let c_in = 16;
     let c_out = 32;
     let in_h = 64;
