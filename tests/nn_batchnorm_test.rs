@@ -10,6 +10,8 @@ fn batchnorm_test(){
         beta: Tensor::new(vec![0.0, 0.0], vec![2]),
         epsilon: 1e-5,
         num_features: 2,
+        gamma_grad: std::rc::Rc::new(std::cell::RefCell::new(vec![0.0; 2])),
+        beta_grad: std::rc::Rc::new(std::cell::RefCell::new(vec![0.0; 2])),
     };
 
     let input = Node::new(vec![1.0, 2.0, 3.0, 4.0], vec![2, 2]);
