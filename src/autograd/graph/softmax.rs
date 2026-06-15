@@ -3,13 +3,30 @@ use crate::autograd::node::Node;
 
 pub fn softmax(a: Rc<RefCell<Node>>) -> Rc<RefCell<Node>> {
     let data: Vec<f32> = a.borrow().data.clone();
-
-    let exps: Vec<f32> = data.iter().map(|&x| x.exp()).collect();
-    let sum: f32 = exps.iter().sum();
-    let out: Vec<f32> = exps.iter().map(|&e| e / sum).collect();
-
     let shape = a.borrow().shape.clone();
-    let n = Node::new(out, shape);
+
+    let (batch, features) = if shape.len() == 2 {
+        (shape[0], shape[1])
+    } else {
+        (1, shape[0])
+    };
+
+    let mut out = vec![0.0; data.len()];
+
+    for bi in 0..batch {
+        let start = bi * features;
+        let row = &data[start..start + features];
+
+        let max = row.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
+        let exps: Vec<f32> = row.iter().map(|&x| (x - max).exp()).collect();
+        let sum: f32 = exps.iter().sum();
+
+        for f in 0..features {
+            out[start + f] = exps[f] / sum;
+        }
+    }
+
+    let n = Node::new(out, shape.clone());
 
     {
         let mut node = n.borrow_mut();
@@ -20,11 +37,19 @@ pub fn softmax(a: Rc<RefCell<Node>>) -> Rc<RefCell<Node>> {
     let out_clone = n.borrow().data.clone();
 
     n.borrow_mut().backward_fn = Some(Box::new(move |grad: &Vec<f32>| {
-        let dot: f32 = out_clone.iter().zip(grad.iter()).map(|(o, g)| o * g).sum();
+        for bi in 0..batch {
+            let start = bi * features;
+            let mut dot = 0.0;
 
-        for i in 0..grad.len() {
-            let g = out_clone[i] * (grad[i] - dot);
-            a_clone.borrow_mut().grad[i] += g;
+            for f in 0..features {
+                dot += out_clone[start + f] * grad[start + f];
+            }
+
+            for f in 0..features {
+                let idx = start + f;
+                let g = out_clone[idx] * (grad[idx] - dot);
+                a_clone.borrow_mut().grad[idx] += g;
+            }
         }
     }));
 
