@@ -16,6 +16,9 @@ pub struct AvgPool2d {
 impl Module for AvgPool2d {
     fn forward(&mut self, input: Rc<RefCell<Node>>) -> Rc<RefCell<Node>> {
         let data = input.borrow().data.clone();
+        let in_shape = input.borrow().shape.clone();
+        let n = in_shape[0];
+
         let c = self.channels;
         let k = self.kernel;
         let stride = self.stride;
@@ -26,27 +29,29 @@ impl Module for AvgPool2d {
         let out_w = (in_w - k) / stride + 1;
         let area = (k * k) as f32;
 
-        let mut out = vec![0.0; c * out_h * out_w];
+        let mut out = vec![0.0; n * c * out_h * out_w];
 
-        for ch in 0..c {
-            for oy in 0..out_h {
-                for ox in 0..out_w {
-                    let mut sum = 0.0;
-                    for i in 0..k {
-                        for j in 0..k {
-                            let iy = oy * stride + i;
-                            let ix = ox * stride + j;
-                            let in_idx = (ch * in_h + iy) * in_w + ix;
-                            sum += data[in_idx];
+        for ni in 0..n {
+            for ch in 0..c {
+                for oy in 0..out_h {
+                    for ox in 0..out_w {
+                        let mut sum = 0.0;
+                        for i in 0..k {
+                            for j in 0..k {
+                                let iy = oy * stride + i;
+                                let ix = ox * stride + j;
+                                let in_idx = ((ni * c + ch) * in_h + iy) * in_w + ix;
+                                sum += data[in_idx];
+                            }
                         }
+                        let out_idx = ((ni * c + ch) * out_h + oy) * out_w + ox;
+                        out[out_idx] = sum / area;
                     }
-                    let out_idx = (ch * out_h + oy) * out_w + ox;
-                    out[out_idx] = sum / area;
                 }
             }
         }
 
-        let result = Node::new(out, vec![c, out_h, out_w]);
+        let result = Node::new(out, vec![n, c, out_h, out_w]);
 
         {
             let mut node = result.borrow_mut();
@@ -55,17 +60,19 @@ impl Module for AvgPool2d {
 
         let input_clone = input.clone();
         result.borrow_mut().backward_fn = Some(Box::new(move |grad: &Vec<f32>| {
-            for ch in 0..c {
-                for oy in 0..out_h {
-                    for ox in 0..out_w {
-                        let out_idx = (ch * out_h + oy) * out_w + ox;
-                        let g = grad[out_idx] / area;
-                        for i in 0..k {
-                            for j in 0..k {
-                                let iy = oy * stride + i;
-                                let ix = ox * stride + j;
-                                let in_idx = (ch * in_h + iy) * in_w + ix;
-                                input_clone.borrow_mut().grad[in_idx] += g;
+            for ni in 0..n {
+                for ch in 0..c {
+                    for oy in 0..out_h {
+                        for ox in 0..out_w {
+                            let out_idx = ((ni * c + ch) * out_h + oy) * out_w + ox;
+                            let g = grad[out_idx] / area;
+                            for i in 0..k {
+                                for j in 0..k {
+                                    let iy = oy * stride + i;
+                                    let ix = ox * stride + j;
+                                    let in_idx = ((ni * c + ch) * in_h + iy) * in_w + ix;
+                                    input_clone.borrow_mut().grad[in_idx] += g;
+                                }
                             }
                         }
                     }

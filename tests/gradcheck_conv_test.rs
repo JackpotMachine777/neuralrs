@@ -39,7 +39,7 @@ fn gradcheck_conv_input() {
         3.5, 4.5, 5.5,
         6.5, 7.5, 8.5,
     ];
-    let shape = vec![2, 3, 3];
+    let shape = vec![1, 2, 3, 3];
 
     let h = 1e-3;
     let mut numeric = vec![0.0; input_data.len()];
@@ -83,7 +83,7 @@ fn gradcheck_conv_weight() {
         1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0,
         0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5,
     ];
-    let shape = vec![2, 3, 3];
+    let shape = vec![1, 2, 3, 3];
 
     let base = make_layer();
     let weight_len = base.weight.storage.data.len();
@@ -129,7 +129,7 @@ fn gradcheck_conv_bias() {
         1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0,
         0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5,
     ];
-    let shape = vec![2, 3, 3];
+    let shape = vec![1, 2, 3, 3];
 
     let h = 1e-3;
     let mut numeric = vec![0.0; 1];
@@ -183,7 +183,7 @@ fn gradcheck_conv_padding() {
         1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0,
         0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5,
     ];
-    let shape = vec![2, 3, 3];
+    let shape = vec![1, 2, 3, 3];
 
     let h = 1e-3;
     let mut numeric = vec![0.0; input_data.len()];

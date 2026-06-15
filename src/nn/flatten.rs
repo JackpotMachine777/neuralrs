@@ -9,9 +9,12 @@ pub struct Flatten { }
 impl Module for Flatten {
     fn forward(&mut self, input: Rc<RefCell<Node>>) -> Rc<RefCell<Node>> {
         let data = input.borrow().data.clone();
-        let len = data.len();
+        let shape =  input.borrow().shape.clone();
 
-        let result = Node::new(data, vec![1, len]);
+        let batch = shape[0];
+        let features: usize = shape[1..].iter().product();
+
+        let result = Node::new(data, vec![batch, features]);
 
         {
             let mut node = result.borrow_mut();
@@ -20,7 +23,9 @@ impl Module for Flatten {
 
         let input_clone = input.clone();
         result.borrow_mut().backward_fn = Some(Box::new(move |grad: &Vec<f32>| {
-            for i in 0..grad.len() { input_clone.borrow_mut().grad[i] += grad[i]; }
+            for i in 0..grad.len() {
+                input_clone.borrow_mut().grad[i] += grad[i];
+            }
         }));
 
         result

@@ -24,14 +24,14 @@ fn conv2d_forward_test() {
         1.0, 2.0, 3.0,
         4.0, 5.0, 6.0,
         7.0, 8.0, 9.0,
-    ], vec![1, 3, 3]);
+    ], vec![1, 1, 3, 3]);
 
     let output = layer.forward(input);
 
     println!("output: {:?}", output.borrow().data);
     println!("shape:  {:?}", output.borrow().shape);
 
-    assert_eq!(output.borrow().shape, vec![1, 2, 2]);
+    assert_eq!(output.borrow().shape, vec![1, 1, 2, 2]);
     assert_eq!(output.borrow().data, vec![12.0, 16.0, 24.0, 28.0]);
 }
 
@@ -58,13 +58,13 @@ fn conv2d_multichannel_test() {
     let input = Node::new(vec![
         1.0, 2.0, 3.0, 4.0,
         5.0, 6.0, 7.0, 8.0, 
-    ], vec![2, 2, 2]);
+    ], vec![1, 2, 2, 2]);
 
     let output = layer.forward(input);
 
     println!("output: {:?}", output.borrow().data);
     println!("shape:  {:?}", output.borrow().shape);
 
-    assert_eq!(output.borrow().shape, vec![2, 1, 1]);
+    assert_eq!(output.borrow().shape, vec![1, 2, 1, 1]);
     assert_eq!(output.borrow().data, vec![36.0, 72.0]);
 }

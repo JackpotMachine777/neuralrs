@@ -29,8 +29,9 @@ fn conv_benchmark(c: &mut Criterion) {
                 c_in, c_out, kh, kw, stride: 1, in_h, in_w,
                 weight_grad: Rc::new(RefCell::new(vec![0.0; w_len])),
                 bias_grad: Rc::new(RefCell::new(vec![0.0; c_out])),
+                padding: 0,
             };
-            let input = Node::new(input_data.clone(), vec![c_in, in_h, in_w]);
+            let input = Node::new(input_data.clone(), vec![1, c_in, in_h, in_w]);
             conv.forward(input)
         })
     });

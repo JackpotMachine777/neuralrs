@@ -23,6 +23,9 @@ pub struct Conv2d {
 impl Module for Conv2d {
     fn forward(&mut self, input: Rc<RefCell<Node>>) -> Rc<RefCell<Node>> {
         let raw = input.borrow().data.clone();
+        let in_shape = input.borrow().shape.clone();
+
+        let n = in_shape[0];
 
         let c_in = self.c_in;
         let c_out = self.c_out;
@@ -36,13 +39,15 @@ impl Module for Conv2d {
         let ph = in_h + 2 * pad;
         let pw = in_w + 2 * pad;
 
-        let mut data = vec![0.0; c_in * ph * pw];
-        for ic in 0..c_in {
-            for y in 0..in_h{
-                for x in 0..in_w {
-                    let src = (ic * in_h + y) * in_w + x;
-                    let dst = (ic * ph + (y + pad)) * pw + (x + pad);
-                    data[dst] = raw[src];
+        let mut data = vec![0.0; n * c_in * ph * pw];
+        for ni in 0..n {
+            for ic in 0..c_in {
+                for y in 0..in_h {
+                    for x in 0..in_w {
+                        let src = ((ni * c_in + ic) * in_h + y) * in_w + x;
+                        let dst = ((ni * c_in + ic) * ph + (y + pad)) * pw + (x + pad);
+                        data[dst] = raw[src];
+                    }
                 }
             }
         }
@@ -53,11 +58,13 @@ impl Module for Conv2d {
         let weight = self.weight.storage.data.clone();
         let bias = self.bias.storage.data.clone();
 
-        let mut out = vec![0.0; c_out * out_h * out_w];
+        let mut out = vec![0.0; n * c_out * out_h * out_w];
 
         out.par_chunks_mut(out_h * out_w)
             .enumerate()
-            .for_each(|(oc, out_map)| {
+            .for_each(|(map_idx, out_map)| {
+                let ni = map_idx / c_out;
+                let oc = map_idx % c_out;
                 for oy in 0..out_h {
                     for ox in 0..out_w {
                         let mut sum = 0.0;
@@ -66,7 +73,7 @@ impl Module for Conv2d {
                                 for j in 0..kw {
                                     let iy = oy * stride + i;
                                     let ix = ox * stride + j;
-                                    let in_idx = (ic * ph + iy) * pw + ix;
+                                    let in_idx = ((ni * c_in + ic) * ph + iy) * pw + ix;
                                     let w_idx = ((oc * c_in + ic) * kh + i) * kw + j;
                                     sum += data[in_idx] * weight[w_idx];
                                 }
@@ -78,7 +85,7 @@ impl Module for Conv2d {
                 }
             });
 
-        let result = Node::new(out, vec![c_out, out_h, out_w]);
+        let result = Node::new(out, vec![n, c_out, out_h, out_w]);
 
         {
             let mut node = result.borrow_mut();
@@ -94,26 +101,28 @@ impl Module for Conv2d {
         result.borrow_mut().backward_fn = Some(Box::new(move |grad: &Vec<f32>| {
             let mut w_grad = vec![0.0; c_out * c_in * kh * kw];
             let mut b_grad = vec![0.0; c_out];
-            let mut padded_in_grad = vec![0.0; c_in * ph * pw];
+            let mut padded_in_grad = vec![0.0; n * c_in * ph * pw];
 
-            for oc in 0..c_out {
-                for oy in 0..out_h {
-                    for ox in 0..out_w {
-                        let out_idx = (oc * out_h + oy) * out_w + ox;
-                        let g = grad[out_idx];
+            for ni in 0..n {
+                for oc in 0..c_out {
+                    for oy in 0..out_h {
+                        for ox in 0..out_w {
+                            let out_idx = ((ni * c_out + oc) * out_h + oy) * out_w + ox;
+                            let g = grad[out_idx];
 
-                        b_grad[oc] += g;
+                            b_grad[oc] += g;
 
-                        for ic in 0..c_in {
-                            for i in 0..kh {
-                                for j in 0..kw {
-                                    let iy = oy * stride + i;
-                                    let ix = ox * stride + j;
-                                    let in_idx = (ic * ph + iy) * pw + ix;
-                                    let w_idx = ((oc * c_in + ic) * kh + i) * kw + j;
+                            for ic in 0..c_in {
+                                for i in 0..kh {
+                                    for j in 0..kw {
+                                        let iy = oy * stride + i;
+                                        let ix = ox * stride + j;
+                                        let in_idx = ((ni * c_in + ic) * ph + iy) * pw + ix;
+                                        let w_idx = ((oc * c_in + ic) * kh + i) * kw + j;
 
-                                    w_grad[w_idx] += g * data_clone[in_idx];
-                                    padded_in_grad[in_idx] += g * weight_clone[w_idx];
+                                        w_grad[w_idx] += g * data_clone[in_idx];
+                                        padded_in_grad[in_idx] += g * weight_clone[w_idx];
+                                    }
                                 }
                             }
                         }
@@ -123,12 +132,14 @@ impl Module for Conv2d {
 
             {
                 let mut ig = input_clone.borrow_mut();
-                for ic in 0..c_in {
-                    for y in 0..in_h {
-                        for x in 0..in_w {
-                            let src = (ic * ph + (y + pad)) * pw + (x + pad);
-                            let dst = (ic * in_h + y) * in_w + x;
-                            ig.grad[dst] += padded_in_grad[src];
+                for ni in 0..n {
+                    for ic in 0..c_in {
+                        for y in 0..in_h {
+                            for x in 0..in_w {
+                                let src = ((ni * c_in + ic) * ph + (y + pad)) * pw + (x + pad);
+                                let dst = ((ni * c_in + ic) * in_h + y) * in_w + x;
+                                ig.grad[dst] += padded_in_grad[src];
+                            }
                         }
                     }
                 }

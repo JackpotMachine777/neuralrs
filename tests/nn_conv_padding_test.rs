@@ -17,14 +17,14 @@ fn conv2d_padding_test() {
         bias_grad: Rc::new(RefCell::new(vec![0.0; 1])),
     };
 
-    let input = Node::new(vec![1.0; 9], vec![1, 3, 3]);
+    let input = Node::new(vec![1.0; 9], vec![1, 1, 3, 3]);
 
     let output = layer.forward(input);
 
     println!("output: {:?}", output.borrow().data);
     println!("shape:  {:?}", output.borrow().shape);
 
-    assert_eq!(output.borrow().shape, vec![1, 3, 3]);
+    assert_eq!(output.borrow().shape, vec![1, 1, 3, 3]);
     assert_eq!(output.borrow().data, vec![
         4.0, 6.0, 4.0,
         6.0, 9.0, 6.0,
