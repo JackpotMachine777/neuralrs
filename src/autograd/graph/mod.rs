@@ -14,3 +14,4 @@ pub mod log;        pub use log::log;
 pub mod sqrt;       pub use sqrt::sqrt;
 pub mod abs;        pub use abs::abs;
 pub mod transpose;  pub use transpose::transpose;
+pub mod scale;      pub use scale::scale;

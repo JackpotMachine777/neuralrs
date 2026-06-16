@@ -12,3 +12,4 @@ pub mod avgpool;
 pub mod loss;
 pub mod rnn;
 pub mod lstm;
+pub mod attention;
