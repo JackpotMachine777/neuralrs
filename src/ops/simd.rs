@@ -1,3 +1,8 @@
+use crate::tensor::Tensor;
+use crate::storage::Storage;
+use crate::dtype::DType;
+use rayon::prelude::*;
+
 #[cfg(target_arch = "x86_64")]
 pub fn dot_simd(a: &[f32], b: &[f32]) -> f32 {
     use std::arch::x86_64::*;
@@ -27,5 +32,43 @@ pub fn dot_simd(a: &[f32], b: &[f32]) -> f32 {
         }
 
         sum
+    }
+}
+
+#[cfg(target_arch = "x86_64")]
+pub fn matmul_simd(a: &Tensor, b: &Tensor) -> Tensor {
+    let m = a.shape[0];
+    let k = a.shape[1];
+    let n = b.shape[1];
+    assert_eq!(k, b.shape[0], "matmul shape mismatch");
+
+    let a_data = &a.storage.data;
+    let b_data = &b.storage.data;
+
+    let mut bt = vec![0.0f32; n * k];
+    for row in 0..k {
+        for col in 0..n {
+            bt[col * k + row] = b_data[row * n + col];
+        }
+    }
+
+    let mut res = vec![0.0f32; m * n];
+
+    res.par_chunks_mut(n)
+        .enumerate()
+        .for_each(|(i, out_row)| {
+            let a_row = &a_data[i * k..i * k + k];
+
+            for j in 0..n {
+                let bt_row = &bt[j * k..j * k + k];
+                out_row[j] = dot_simd(a_row, bt_row);
+            }
+        });
+
+    Tensor {
+        storage: Storage::new(res),
+        grad: vec![0.0; m * n],
+        shape: vec![m, n],
+        dtype: DType::Float32,
     }
 }
