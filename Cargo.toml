@@ -18,3 +18,7 @@ harness = false
 [[bench]]
 name = "conv_bench"
 harness = false
+
+[[bench]]
+name = "im2col_bench"
+harness = false

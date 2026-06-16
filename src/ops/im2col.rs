@@ -1,3 +1,6 @@
+use crate::tensor::Tensor; 
+use crate::ops::matmul::matmul;
+
 pub fn im2col(
     data: &Vec<f32>,
     n: usize,
@@ -68,21 +71,22 @@ pub fn conv2d_im2col(
     let out_h = (in_h + 2 * pad - kh) / stride + 1;
     let out_w = (in_w + 2 * pad - kw) / stride + 1;
 
+    let w_tensor = Tensor::new(weight.clone(), vec![c_out, col_h]);
+
     let mut out = vec![0.0; n * c_out * col_w];
 
     for ni in 0..n {
+        let start = ni * col_h * col_w;
+        let col_slice = col[start..start + col_h * col_w].to_vec();
+        let col_tensor = Tensor::new(col_slice, vec![col_h, col_w]);
+
+        let result = matmul(&w_tensor, &col_tensor);
+        let res_data = &result.storage.data;
+
         for oc in 0..c_out {
             for p in 0..col_w {
-                let mut sum = 0.0;
-                
-                for r in 0..col_h {
-                    let w_idx = oc * col_h + r;
-                    let col_idx = (ni * col_h + r) * col_w + p;
-                    sum += weight[w_idx] * col[col_idx];
-                }
-                sum += bias[oc];
                 let out_idx = (ni * c_out + oc) * col_w + p;
-                out[out_idx] = sum;
+                out[out_idx] = res_data[oc * col_w + p] + bias[oc];
             }
         }
     }
