@@ -9,3 +9,4 @@ pub mod sequential;
 pub mod flatten;
 pub mod maxpool;
 pub mod avgpool;
+pub mod loss;

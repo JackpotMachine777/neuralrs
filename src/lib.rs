@@ -11,3 +11,4 @@ pub mod dispatch;
 pub mod init;
 pub mod serialize;
 pub mod data;
+pub mod train;
