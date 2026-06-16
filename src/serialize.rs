@@ -1,5 +1,6 @@
 use crate::nn::linear::Linear;
 use crate::tensor::Tensor;
+use crate::nn::module::Module;
 use std::fs::File;
 use std::io::{Write, BufRead, BufReader};
 
@@ -58,5 +59,43 @@ pub fn load_linear(path: &str) -> Linear {
         bias: Tensor::new(b_data, vec![bs]),
         weights_node: None,
         bias_node: None,
+    }
+}
+
+pub fn save_model<M: Module>(model: &mut M, path: &str) {
+    let mut file = File::create(path).expect("cannot create file");
+    let params = model.parameters();
+
+    writeln!(file, "tensors {}", params.len()).unwrap();
+
+    for p in params {
+        writeln!(file, "len {}", p.storage.data.len()).unwrap();
+
+        for v in &p.storage.data {
+            writeln!(file, "{}", v).unwrap();
+        }
+    }
+}
+
+pub fn load_model<M: Module>(model: &mut M, path: &str) {
+    let file = File::open(path).expect("cannot open file");
+    let reader = BufReader::new(file);
+    let mut lines = reader.lines().map(|l| l.unwrap());
+
+    let header = lines.next().unwrap();
+    let n_tensors: usize = header.split_whitespace().skip(1).next().unwrap().parse().unwrap();
+
+    let mut params = model.parameters();
+    assert_eq!(params.len(), n_tensors, "tensors count in file != model parameters count");
+
+    for p in params.iter_mut() {
+        let len_line = lines.next().unwrap();
+        let len: usize = len_line.split_whitespace().skip(1).next().unwrap().parse().unwrap();
+        assert_eq!(len, p.storage.data.len(), "tensor size in file != size in model");
+        
+        for i in 0..len {
+            let v: f32 = lines.next().unwrap().parse().unwrap();
+            p.storage.data[i] = v;
+        }
     }
 }
