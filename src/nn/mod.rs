@@ -13,3 +13,4 @@ pub mod loss;
 pub mod rnn;
 pub mod lstm;
 pub mod attention;
+pub mod self_attention;
