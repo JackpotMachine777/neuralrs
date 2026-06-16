@@ -10,3 +10,4 @@ pub mod flatten;
 pub mod maxpool;
 pub mod avgpool;
 pub mod loss;
+pub mod rnn;
