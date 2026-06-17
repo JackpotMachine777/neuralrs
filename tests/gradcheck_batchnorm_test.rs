@@ -33,6 +33,10 @@ fn gradcheck_batchnorm() {
         num_features: 2,
         gamma_grad: std::rc::Rc::new(std::cell::RefCell::new(vec![0.0; 2])),
         beta_grad: std::rc::Rc::new(std::cell::RefCell::new(vec![0.0; 2])),
+        running_mean: vec![0.0; 2],
+        running_var: vec![1.0; 2],
+        momentum: 0.9,
+        training: true,
     };
 
     let input_data = vec![2.0, 5.0, 1.0, 3.0, 4.0, 1.0, 6.0, 2.0];

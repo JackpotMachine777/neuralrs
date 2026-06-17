@@ -12,6 +12,10 @@ fn batchnorm_test(){
         num_features: 2,
         gamma_grad: std::rc::Rc::new(std::cell::RefCell::new(vec![0.0; 2])),
         beta_grad: std::rc::Rc::new(std::cell::RefCell::new(vec![0.0; 2])),
+        running_mean: vec![0.0; 2],
+        running_var: vec![1.0; 2],
+        momentum: 0.9,
+        training: true,
     };
 
     let input = Node::new(vec![1.0, 2.0, 3.0, 4.0], vec![2, 2]);
