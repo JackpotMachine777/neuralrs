@@ -83,6 +83,6 @@ fn cnn_through_sequential() {
     }
 
     println!("first loss: {}, last loss: {}", first_loss, last_loss);
-    assert!(last_loss < first_loss * 0.1, "loss nie spadl wystarczajaco");
+    assert!(last_loss < first_loss * 0.1, "loss didnt drop enough");
     println!("cnn through sequential ok");
 }

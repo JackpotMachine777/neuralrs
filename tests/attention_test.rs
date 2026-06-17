@@ -44,7 +44,7 @@ fn attention_uniform_when_keys_equal() {
     println!("out: {:?}", data);
 
     for row in 0..seq_len {
-        assert!((data[row*d] - 2.0).abs() < 1e-4, "wiersz {} nie jest srednia", row);
+        assert!((data[row*d] - 2.0).abs() < 1e-4, "row {} is not mean", row);
         assert!((data[row*d+1] - 2.0).abs() < 1e-4);
     }
 

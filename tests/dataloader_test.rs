@@ -45,7 +45,7 @@ fn dataloader_shuffle_keeps_pairs() {
 
     for b in 0..loader.num_batches() {
         let (inp, tgt, _) = loader.get_batch(b);
-        assert_eq!(tgt[0], inp[0] * 10.0, "shuffle rozparowalo input i target!");
+        assert_eq!(tgt[0], inp[0] * 10.0, "shuffle paired input and target!");
     }
 
     println!("shuffle keeps pairs ok");

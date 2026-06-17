@@ -49,7 +49,7 @@ fn multihead_forward_backward() {
 
     let x_grad: f32 = x.borrow().grad.iter().map(|v| v.abs()).sum();
     println!("x grad sum: {}", x_grad);
-    assert!(x_grad > 0.0, "x gradient zero - rozgaleziony backward nie dziala!");
+    assert!(x_grad > 0.0, "x gradient zero - backward doesnt work!");
 
     println!("multi-head attention ok");
 }

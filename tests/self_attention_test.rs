@@ -45,7 +45,7 @@ fn self_attention_forward_backward() {
 
     let x_grad: f32 = x.borrow().grad.iter().map(|v| v.abs()).sum();
     println!("x grad sum: {}", x_grad);
-    assert!(x_grad > 0.0, "x gradient zero - topo backward przez 3 sciezki nie dziala!");
+    assert!(x_grad > 0.0, "x gradient zero - topo backward through 3 layers doesnt work!");
 
     println!("self-attention ok");
 }
