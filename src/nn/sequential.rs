@@ -40,4 +40,10 @@ impl Module for Sequential{
             layer.sync_grads();
         }
     }
+
+    fn set_training(&mut self, training: bool) {
+        for layer in &mut self.list {
+            layer.set_training(training);
+        }
+    }
 }

@@ -8,4 +8,5 @@ pub trait Module {
     fn parameters(&mut self) -> Vec<&mut Tensor>;
     fn zero_grad(&mut self);
     fn sync_grads(&mut self) {}
+    fn set_training(&mut self, _training: bool) {}
 }

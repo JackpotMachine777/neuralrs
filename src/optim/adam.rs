@@ -14,7 +14,6 @@ impl ADAM{
     pub fn step(&mut self, w: &mut Vec<Box<dyn Module>>){
         let mut idx = 0;
         
-
         for i in 0..w.len(){
             let mut item = w[i].parameters();
 

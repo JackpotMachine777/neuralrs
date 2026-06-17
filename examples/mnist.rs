@@ -11,6 +11,9 @@ use rstorch::data::dataloader::DataLoader;
 use rstorch::data::mnist::{read_images, read_labels, read_labels_raw};
 use rstorch::autograd::node::Node;
 use rstorch::init::he;
+use rstorch::optim::adamw::ADAMW;
+use rstorch::nn::dropout::Dropout;
+
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::time::Instant;
@@ -36,6 +39,7 @@ fn argmax(v: &[f32]) -> usize {
 }
 
 fn evaluate(model: &mut Sequential, images: &[Vec<f32>], raw_labels: &[usize], limit: usize) -> f32 {
+    model.set_training(false);
     let mut correct = 0;
     let n = limit.min(images.len());
     for i in 0..n {
@@ -44,6 +48,7 @@ fn evaluate(model: &mut Sequential, images: &[Vec<f32>], raw_labels: &[usize], l
         let pred = argmax(&out.borrow().data);
         if pred == raw_labels[i] { correct += 1; }
     }
+    model.set_training(true);
     correct as f32 / n as f32
 }
 
@@ -68,7 +73,15 @@ fn main() {
             Box::new(MaxPool2d { kernel: 2, stride: 2, channels: 16, in_h: 14, in_w: 14 }),
             Box::new(Flatten {}),
             Box::new(Linear {
-                weights: Tensor::new(he::he(16 * 7 * 7, 10), vec![16 * 7 * 7, 10]),
+                weights: Tensor::new(he::he(16 * 7 * 7, 128), vec![16 * 7 * 7, 128]),
+                bias: Tensor::new(vec![0.0; 128], vec![128]),
+                weights_node: None,
+                bias_node: None,
+            }),
+            Box::new(ReLU {}),
+            Box::new(Dropout { probability: 0.2, mask: Vec::new(), training: true }),
+            Box::new(Linear {
+                weights: Tensor::new(he::he(128, 10), vec![128, 10]),
                 bias: Tensor::new(vec![0.0; 10], vec![10]),
                 weights_node: None,
                 bias_node: None,
@@ -77,10 +90,19 @@ fn main() {
     };
 
     let loss_fn = CrossEntropyLoss;
-    let lr = 0.01;
-    let epochs = 3;
+    let mut optimizer = ADAMW {
+        lr: 0.001,
+        beta1: 0.9,
+        beta2: 0.999,
+        epsilon: 1e-8,
+        weight_decay: 0.0001,
+        t: 0,
+        m: Vec::new(),
+        v: Vec::new(),
+    };
+    let epochs = 15;
 
-    println!("Starting training (lr={}, batch={}, epochs={})", lr, batch_size, epochs);
+    println!("Starting training (AdamW lr={}, batch={}, epochs={})", optimizer.lr, batch_size, epochs);
 
     for epoch in 0..epochs {
         loader.shuffle();
@@ -102,11 +124,7 @@ fn main() {
             loss_fn.backward(&output, &target);
             model.sync_grads();
 
-            for p in model.parameters() {
-                for i in 0..p.storage.data.len() {
-                    p.storage.data[i] -= lr * p.grad[i];
-                }
-            }
+            optimizer.step(&mut model.list);
 
             if b % 100 == 0 {
                 println!("  epoch {} batch {}/{} loss {:.4} ({:.1}s elapsed)",

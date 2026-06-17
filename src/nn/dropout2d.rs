@@ -65,5 +65,8 @@ impl Module for Dropout2d {
     }
 
     fn parameters(&mut self) -> Vec<&mut Tensor> { vec![] }
+
     fn zero_grad(&mut self) {}
+
+    fn set_training(&mut self, training: bool) { self.training = training; }
 }
