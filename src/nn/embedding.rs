@@ -53,6 +53,59 @@ impl Embedding {
         result
     }
 
+    pub fn forward_batch(&mut self, batch_indices: &[Vec<usize>]) -> Rc<RefCell<Node>> {
+        let batch = batch_indices.len();
+        let seq_len = batch_indices[0].len();
+        let dim = self.embedding_dim;
+
+        for seq in batch_indices {
+            assert_eq!(seq.len(), seq_len, "all sequences in batch must have equal length");
+        }
+
+        let mut data = vec![0.0; batch * seq_len * dim];
+        for b in 0..batch {
+            for pos in 0..seq_len {
+                let idx = batch_indices[b][pos];
+                assert!(idx < self.vocab_size, "token index out of vocab range");
+
+                for d in 0..dim {
+                    data[(b * seq_len + pos) * dim + d] = self.weight.storage.data[idx * dim + d];
+                }
+            }
+        }
+
+        let result = Node::new(data, vec![batch, seq_len, dim]);
+
+        if self.weight_node.is_none() {
+            self.weight_node = Some(Node::new(
+                self.weight.storage.data.clone(),
+                self.weight.shape.clone(),
+            ));
+        }
+        let w_node = self.weight_node.clone().unwrap();
+
+        {
+            let mut node = result.borrow_mut();
+            node.parents = vec![w_node.clone()];
+        }
+
+        let batch_indices_owned: Vec<Vec<usize>> = batch_indices.to_vec();
+        result.borrow_mut().backward_fn = Some(Box::new(move |grad: &Vec<f32>| {
+            let mut w = w_node.borrow_mut();
+
+            for b in 0..batch {
+                for pos in 0..seq_len {
+                    let idx = batch_indices_owned[b][pos];
+                    for d in 0..dim {
+                        w.grad[idx * dim + d] += grad[(b * seq_len + pos) * dim + d];
+                    }
+                }
+            }
+        }));
+
+        result
+    }
+
     pub fn parameters(&mut self) -> Vec<&mut Tensor> { vec![&mut self.weight] }
 
     pub fn zero_grad(&mut self) {
