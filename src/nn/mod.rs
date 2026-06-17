@@ -17,3 +17,4 @@ pub mod self_attention;
 pub mod multihead;
 pub mod positional;
 pub mod embedding;
+pub mod dropout2d;
