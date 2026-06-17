@@ -14,12 +14,12 @@ fn positional_encoding_values() {
     println!("PE output: {:?}", data);
     assert_eq!(out.borrow().shape, vec![3, d_model]);
 
-    assert!((data[0] - 0.0).abs() < 1e-5, "pos0 dim0 powinno byc sin(0)=0");
-    assert!((data[1] - 1.0).abs() < 1e-5, "pos0 dim1 powinno byc cos(0)=1");
-    assert!((data[2] - 0.0).abs() < 1e-5, "pos0 dim2 powinno byc sin(0)=0");
-    assert!((data[3] - 1.0).abs() < 1e-5, "pos0 dim3 powinno byc cos(0)=1");
+    assert!((data[0] - 0.0).abs() < 1e-5, "pos0 dim0 should be sin(0)=0");
+    assert!((data[1] - 1.0).abs() < 1e-5, "pos0 dim1 should be cos(0)=1");
+    assert!((data[2] - 0.0).abs() < 1e-5, "pos0 dim2 should be sin(0)=0");
+    assert!((data[3] - 1.0).abs() < 1e-5, "pos0 dim3 should be cos(0)=1");
 
-    assert!((data[4] - 1.0_f32.sin()).abs() < 1e-4, "pos1 dim0 powinno byc sin(1)");
+    assert!((data[4] - 1.0_f32.sin()).abs() < 1e-4, "pos1 dim0 should be sin(1)");
 
     println!("PE values ok");
 }
