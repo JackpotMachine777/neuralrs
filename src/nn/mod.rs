@@ -15,3 +15,4 @@ pub mod lstm;
 pub mod attention;
 pub mod self_attention;
 pub mod multihead;
+pub mod positional;
