@@ -85,17 +85,15 @@ fn main() {
 
     let mut model = Sequential {
         list: vec![
-            Box::new(conv(1, 16, 3, 3, 1, 28, 28)),
+            Box::new(conv(1, 8, 3, 3, 1, 28, 28)),
             Box::new(ReLU {}),
-            Box::new(MaxPool2d { kernel: 2, stride: 2, channels: 16, in_h: 28, in_w: 28 }),
-            Box::new(conv(16, 32, 3, 3, 1, 14, 14)),
+            Box::new(MaxPool2d { kernel: 2, stride: 2, channels: 8, in_h: 28, in_w: 28 }),
+            Box::new(conv(8, 16, 3, 3, 1, 14, 14)),
             Box::new(ReLU {}),
-            Box::new(MaxPool2d { kernel: 2, stride: 2, channels: 32, in_h: 14, in_w: 14 }),
-            Box::new(conv(32, 64, 3, 3, 1, 7, 7)),
-            Box::new(ReLU {}),
+            Box::new(MaxPool2d { kernel: 2, stride: 2, channels: 16, in_h: 14, in_w: 14 }),
             Box::new(Flatten {}),
             Box::new(Linear {
-                weights: Tensor::new(he::he(64 * 7 * 7, 128), vec![64 * 7 * 7, 128]),
+                weights: Tensor::new(he::he(16 * 7 * 7, 128), vec![16 * 7 * 7, 128]),
                 bias: Tensor::new(vec![0.0; 128], vec![128]),
                 weights_node: None,
                 bias_node: None,
