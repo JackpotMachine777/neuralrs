@@ -38,6 +38,24 @@ fn argmax(v: &[f32]) -> usize {
     best
 }
 
+fn shift_image(img: &[f32]) -> Vec<f32> {
+    let size = 28;
+    let dx = (rand::random::<f32>() * 5.0).floor() as i32 - 2;
+    let dy = (rand::random::<f32>() * 5.0).floor() as i32 - 2;
+
+    let mut out = vec![0.0; size * size];
+    for y in 0..size as i32 {
+        for x in 0..size as i32 {
+            let src_x = x - dx;
+            let src_y = y - dy;
+            if src_x >= 0 && src_x < size as i32 && src_y >= 0 && src_y < size as i32 {
+                out[(y * size as i32 + x) as usize] = img[(src_y * size as i32 + src_x) as usize];
+            }
+        }
+    }
+    out
+}
+
 fn evaluate(model: &mut Sequential, images: &[Vec<f32>], raw_labels: &[usize], limit: usize) -> f32 {
     model.set_training(false);
     let mut correct = 0;
@@ -62,6 +80,7 @@ fn main() {
 
     let batch_size = 32;
     let mut loader = DataLoader::new(train_images, train_labels, batch_size);
+    loader.set_augment(Box::new(shift_image));
 
     let mut model = Sequential {
         list: vec![
