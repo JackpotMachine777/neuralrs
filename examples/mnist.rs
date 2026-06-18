@@ -13,6 +13,7 @@ use rstorch::autograd::node::Node;
 use rstorch::init::he;
 use rstorch::optim::adamw::ADAMW;
 use rstorch::nn::dropout::Dropout;
+use rstorch::nn::batchnorm::BatchNorm;
 
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -97,6 +98,18 @@ fn main() {
                 weights_node: None,
                 bias_node: None,
             }),
+            Box::new(BatchNorm {
+                gamma: Tensor::new(vec![1.0; 128], vec![128]),
+                beta: Tensor::new(vec![0.0; 128], vec![128]),
+                epsilon: 1e-5,
+                num_features: 128,
+                gamma_grad: Rc::new(RefCell::new(vec![0.0; 128])),
+                beta_grad: Rc::new(RefCell::new(vec![0.0; 128])),
+                running_mean: vec![0.0; 128],
+                running_var: vec![1.0; 128],
+                momentum: 0.9,
+                training: true,
+            }),
             Box::new(ReLU {}),
             Box::new(Dropout { probability: 0.2, mask: Vec::new(), training: true }),
             Box::new(Linear {
@@ -119,7 +132,7 @@ fn main() {
         m: Vec::new(),
         v: Vec::new(),
     };
-    let epochs = 15;
+    let epochs = 25;
 
     println!("Starting training (AdamW lr={}, batch={}, epochs={})", optimizer.lr, batch_size, epochs);
 
