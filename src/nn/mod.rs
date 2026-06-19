@@ -19,3 +19,4 @@ pub mod positional;
 pub mod embedding;
 pub mod dropout2d;
 pub mod batchnorm2d;
+pub mod transformer_block;
