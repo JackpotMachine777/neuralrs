@@ -4,6 +4,8 @@ use crate::autograd::graph;
 use crate::nn::attention::attention;
 use std::rc::Rc;
 use std::cell::RefCell;
+use crate::nn::attention::attention_batch;
+use crate::autograd::graph::reshape::reshape;
 
 pub struct MultiHeadAttention {
     pub w_q: Tensor,
@@ -53,6 +55,55 @@ impl MultiHeadAttention {
         let concat = graph::concat_cols(heads);
 
         graph::matmul(concat, w_o)
+    }
+
+    pub fn forward_batch(&mut self, x: Rc<RefCell<Node>>) -> Rc<RefCell<Node>> {
+        if self.w_q_node.is_none() {
+            self.w_q_node = Some(Node::new(self.w_q.storage.data.clone(), self.w_q.shape.clone()));
+            self.w_k_node = Some(Node::new(self.w_k.storage.data.clone(), self.w_k.shape.clone()));
+            self.w_v_node = Some(Node::new(self.w_v.storage.data.clone(), self.w_v.shape.clone()));
+            self.w_o_node = Some(Node::new(self.w_o.storage.data.clone(), self.w_o.shape.clone()));
+        }
+        let w_q = self.w_q_node.clone().unwrap();
+        let w_k = self.w_k_node.clone().unwrap();
+        let w_v = self.w_v_node.clone().unwrap();
+        let w_o = self.w_o_node.clone().unwrap();
+
+        let shape = x.borrow().shape.clone();
+        let batch = shape[0];
+        let seq = shape[1];
+        let d = shape[2];
+
+        let proj = |x: Rc<RefCell<Node>>, w: Rc<RefCell<Node>>| -> Rc<RefCell<Node>> {
+            let flat = reshape(x, vec![batch * seq, d]);
+            let out = crate::autograd::graph::matmul(flat, w);
+            reshape(out, vec![batch, seq, d])
+        };
+
+        let q = proj(x.clone(), w_q);
+        let k = proj(x.clone(), w_k);
+        let v = proj(x.clone(), w_v);
+
+        let d_head = self.d_model / self.num_heads;
+
+        let mut heads = Vec::new();
+        for h in 0..self.num_heads {
+            let start = h * d_head;
+            let end = start + d_head;
+
+            let q_h = graph::slice_cols(q.clone(), start, end);
+            let k_h = graph::slice_cols(k.clone(), start, end);
+            let v_h = graph::slice_cols(v.clone(), start, end);
+
+            let head_out = attention_batch(q_h, k_h, v_h);
+            heads.push(head_out);
+        }
+
+        let concat = graph::concat_cols(heads);
+
+        let flat = reshape(concat, vec![batch * seq, d]);
+        let out = graph::matmul(flat, w_o);
+        reshape(out, vec![batch, seq, d])
     }
 
     pub fn parameters(&mut self) -> Vec<&mut Tensor> {
