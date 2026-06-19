@@ -17,24 +17,25 @@ impl Module for LayerNorm {
     fn forward(&mut self, input: Rc<RefCell<Node>>) -> Rc<RefCell<Node>> {
         let data = input.borrow().data.clone();
         let shape = input.borrow().shape.clone();
-        let batch = shape[0];
-        let features = shape[1];
         let eps = self.epsilon;
+
+        let features = *shape.last().unwrap();
+        let rows = data.len() / features;
 
         let gamma = self.gamma.storage.data.clone();
         let beta = self.beta.storage.data.clone();
 
         let mut out = vec![0.0; data.len()];
         let mut x_norm = vec![0.0; data.len()];
-        let mut inv_std = vec![0.0; batch];
+        let mut inv_std = vec![0.0; rows];
 
-        for b in 0..batch {
-            let start = b * features;
+        for r in 0..rows {
+            let start = r * features;
             let row = &data[start..start + features];
             let mean = row.iter().sum::<f32>() / features as f32;
             let var = row.iter().map(|&x| (x - mean).powi(2)).sum::<f32>() / features as f32;
             let istd = 1.0 / (var + eps).sqrt();
-            inv_std[b] = istd;
+            inv_std[r] = istd;
 
             for f in 0..features {
                 let idx = start + f;
@@ -59,9 +60,9 @@ impl Module for LayerNorm {
             let mut dgamma = vec![0.0; features];
             let mut dbeta = vec![0.0; features];
 
-            for b in 0..batch {
-                let start = b * features;
-                let istd = inv_std[b];
+            for r in 0..rows {
+                let start = r * features;
+                let istd = inv_std[r];
 
                 let mut sum1 = 0.0;
                 let mut sum2 = 0.0;
@@ -73,13 +74,12 @@ impl Module for LayerNorm {
                     sum2 += dxhat * x_norm[idx];
                 }
 
-                let n = features as f32;
+                let nf = features as f32;
 
                 for f in 0..features {
                     let idx = start + f;
                     let dxhat = grad[idx] * gamma[f];
-
-                    let dx = istd * (dxhat - sum1 / n - x_norm[idx] * sum2 / n);
+                    let dx = istd * (dxhat - sum1 / nf - x_norm[idx] * sum2 / nf);
                     input_clone.borrow_mut().grad[idx] += dx;
 
                     dgamma[f] += grad[idx] * x_norm[idx];
@@ -89,7 +89,6 @@ impl Module for LayerNorm {
 
             let mut gg = gamma_grad_buf.borrow_mut();
             let mut bg = beta_grad_buf.borrow_mut();
-
             for f in 0..features {
                 gg[f] += dgamma[f];
                 bg[f] += dbeta[f];
@@ -101,10 +100,9 @@ impl Module for LayerNorm {
 
     fn parameters(&mut self) -> Vec<&mut Tensor> { vec![&mut self.gamma, &mut self.beta] }
 
-    fn zero_grad(&mut self) { 
+    fn zero_grad(&mut self) {
         self.gamma.grad = vec![0.0; self.gamma.storage.data.len()];
         self.beta.grad = vec![0.0; self.beta.storage.data.len()];
-
         *self.gamma_grad.borrow_mut() = vec![0.0; self.gamma.storage.data.len()];
         *self.beta_grad.borrow_mut() = vec![0.0; self.beta.storage.data.len()];
     }
