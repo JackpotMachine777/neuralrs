@@ -1,10 +1,16 @@
 use std::{rc::Rc, cell::RefCell};
 use crate::autograd::node::Node;
+use rayon::prelude::*;
+
+const PAR_THRESHOLD: usize = 8192;
 
 pub fn pow(a: Rc<RefCell<Node>>, p: f32) -> Rc<RefCell<Node>> {
-    let data: Vec<f32> = a.borrow().data.iter()
-        .map(|&x| x.powf(p))
-        .collect();
+    let input = a.borrow().data.clone();
+    let data: Vec<f32> = if input.len() > PAR_THRESHOLD {
+        input.par_iter().map(|&x| x.powf(p)).collect()
+    } else {
+        input.iter().map(|&x| x.powf(p)).collect()
+    };
 
     let shape = a.borrow().shape.clone();
     let n = Node::new(data, shape);
@@ -17,11 +23,14 @@ pub fn pow(a: Rc<RefCell<Node>>, p: f32) -> Rc<RefCell<Node>> {
     let a_clone = a.clone();
 
     n.borrow_mut().backward_fn = Some(Box::new(move |grad: &Vec<f32>| {
-        for i in 0..grad.len() {
-            let x = a_clone.borrow().data[i];
-            let d = p * x.powf(p - 1.0);
-            a_clone.borrow_mut().grad[i] += grad[i] * d;
-        }
+        let x = a_clone.borrow().data.clone();
+        let local: Vec<f32> = if grad.len() > PAR_THRESHOLD {
+            (0..grad.len()).into_par_iter().map(|i| grad[i] * (p * x[i].powf(p - 1.0))).collect()
+        } else {
+            (0..grad.len()).map(|i| grad[i] * (p * x[i].powf(p - 1.0))).collect()
+        };
+        let mut ig = a_clone.borrow_mut();
+        for i in 0..local.len() { ig.grad[i] += local[i]; }
     }));
 
     n

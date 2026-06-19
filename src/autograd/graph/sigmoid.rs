@@ -1,10 +1,16 @@
 use std::{rc::Rc, cell::RefCell};
 use crate::autograd::node::Node;
+use rayon::prelude::*;
+
+const PAR_THRESHOLD: usize = 8192;
 
 pub fn sigmoid(a: Rc<RefCell<Node>>) -> Rc<RefCell<Node>> {
-    let data: Vec<f32> = a.borrow().data.iter()
-        .map(|&x| 1.0 / (1.0 + (-x).exp()))
-        .collect();
+    let input = a.borrow().data.clone();
+    let data: Vec<f32> = if input.len() > PAR_THRESHOLD {
+        input.par_iter().map(|&x| 1.0 / (1.0 + (-x).exp())).collect()
+    } else {
+        input.iter().map(|&x| 1.0 / (1.0 + (-x).exp())).collect()
+    };
 
     let shape = a.borrow().shape.clone();
     let n = Node::new(data, shape);
@@ -17,11 +23,20 @@ pub fn sigmoid(a: Rc<RefCell<Node>>) -> Rc<RefCell<Node>> {
     let a_clone = a.clone();
 
     n.borrow_mut().backward_fn = Some(Box::new(move |grad: &Vec<f32>| {
-        for i in 0..grad.len() {
-            let s = 1.0 / (1.0 + (-a_clone.borrow().data[i]).exp());
-            let g = s * (1.0 - s) * grad[i];
-            a_clone.borrow_mut().grad[i] += g;
-        }
+        let x = a_clone.borrow().data.clone();
+        let local: Vec<f32> = if grad.len() > PAR_THRESHOLD {
+            (0..grad.len()).into_par_iter().map(|i| {
+                let s = 1.0 / (1.0 + (-x[i]).exp());
+                s * (1.0 - s) * grad[i]
+            }).collect()
+        } else {
+            (0..grad.len()).map(|i| {
+                let s = 1.0 / (1.0 + (-x[i]).exp());
+                s * (1.0 - s) * grad[i]
+            }).collect()
+        };
+        let mut ig = a_clone.borrow_mut();
+        for i in 0..local.len() { ig.grad[i] += local[i]; }
     }));
 
     n
