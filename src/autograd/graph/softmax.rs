@@ -5,23 +5,20 @@ pub fn softmax(a: Rc<RefCell<Node>>) -> Rc<RefCell<Node>> {
     let data: Vec<f32> = a.borrow().data.clone();
     let shape = a.borrow().shape.clone();
 
-    let (batch, features) = if shape.len() == 2 {
-        (shape[0], shape[1])
-    } else {
-        (1, shape[0])
-    };
+    let width = *shape.last().unwrap();
+    let rows = data.len() / width;
 
     let mut out = vec![0.0; data.len()];
 
-    for bi in 0..batch {
-        let start = bi * features;
-        let row = &data[start..start + features];
+    for r in 0..rows {
+        let start = r * width;
+        let row = &data[start..start + width];
 
         let max = row.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
         let exps: Vec<f32> = row.iter().map(|&x| (x - max).exp()).collect();
         let sum: f32 = exps.iter().sum();
 
-        for f in 0..features {
+        for f in 0..width {
             out[start + f] = exps[f] / sum;
         }
     }
@@ -37,15 +34,15 @@ pub fn softmax(a: Rc<RefCell<Node>>) -> Rc<RefCell<Node>> {
     let out_clone = n.borrow().data.clone();
 
     n.borrow_mut().backward_fn = Some(Box::new(move |grad: &Vec<f32>| {
-        for bi in 0..batch {
-            let start = bi * features;
+        for r in 0..rows {
+            let start = r * width;
             let mut dot = 0.0;
 
-            for f in 0..features {
+            for f in 0..width {
                 dot += out_clone[start + f] * grad[start + f];
             }
 
-            for f in 0..features {
+            for f in 0..width {
                 let idx = start + f;
                 let g = out_clone[idx] * (grad[idx] - dot);
                 a_clone.borrow_mut().grad[idx] += g;
