@@ -21,3 +21,4 @@ pub mod leaky_relu;     pub use leaky_relu::leaky_relu;
 pub mod elu;            pub use elu::elu;
 pub mod silu;           pub use silu::silu;
 pub mod bmm;            pub use bmm::bmm;
+pub mod reshape;        pub use reshape::reshape;
