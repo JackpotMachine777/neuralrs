@@ -18,3 +18,4 @@ pub mod multihead;
 pub mod positional;
 pub mod embedding;
 pub mod dropout2d;
+pub mod batchnorm2d;
