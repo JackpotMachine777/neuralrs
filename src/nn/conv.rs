@@ -99,36 +99,75 @@ impl Module for Conv2d {
         let bias_grad_buf = self.bias_grad.clone();
 
         result.borrow_mut().backward_fn = Some(Box::new(move |grad: &Vec<f32>| {
-            let mut w_grad = vec![0.0; c_out * c_in * kh * kw];
-            let mut b_grad = vec![0.0; c_out];
+            let w_len = c_out * c_in * kh * kw;
+            let units = n * c_out;
+
+            let (w_grad, b_grad) = (0..units)
+                .into_par_iter()
+                .fold(
+                    || (vec![0.0f32; w_len], vec![0.0f32; c_out]),
+                    |(mut wg, mut bg), unit| {
+                        let ni = unit / c_out;
+                        let oc = unit % c_out;
+                        for oy in 0..out_h {
+                            for ox in 0..out_w {
+                                let out_idx = ((ni * c_out + oc) * out_h + oy) * out_w + ox;
+                                let g = grad[out_idx];
+                                bg[oc] += g;
+
+                                for ic in 0..c_in {
+                                    for i in 0..kh {
+                                        for j in 0..kw {
+                                            let iy = oy * stride + i;
+                                            let ix = ox * stride + j;
+                                            let in_idx = ((ni * c_in + ic) * ph + iy) * pw + ix;
+                                            let w_idx = ((oc * c_in + ic) * kh + i) * kw + j;
+                                            wg[w_idx] += g * data_clone[in_idx];
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        (wg, bg)
+                    },
+                )
+                .reduce(
+                    || (vec![0.0f32; w_len], vec![0.0f32; c_out]),
+                    |(mut wa, mut ba), (wb, bb)| {
+                        for k in 0..w_len { wa[k] += wb[k]; }
+                        for k in 0..c_out { ba[k] += bb[k]; }
+                        (wa, ba)
+                    },
+                );
+
             let mut padded_in_grad = vec![0.0; n * c_in * ph * pw];
+            let in_block = c_in * ph * pw;
 
-            for ni in 0..n {
-                for oc in 0..c_out {
-                    for oy in 0..out_h {
-                        for ox in 0..out_w {
-                            let out_idx = ((ni * c_out + oc) * out_h + oy) * out_w + ox;
-                            let g = grad[out_idx];
+            padded_in_grad
+                .par_chunks_mut(in_block)
+                .enumerate()
+                .for_each(|(ni, in_chunk)| {
+                    for oc in 0..c_out {
+                        for oy in 0..out_h {
+                            for ox in 0..out_w {
+                                let out_idx = ((ni * c_out + oc) * out_h + oy) * out_w + ox;
+                                let g = grad[out_idx];
 
-                            b_grad[oc] += g;
-
-                            for ic in 0..c_in {
-                                for i in 0..kh {
-                                    for j in 0..kw {
-                                        let iy = oy * stride + i;
-                                        let ix = ox * stride + j;
-                                        let in_idx = ((ni * c_in + ic) * ph + iy) * pw + ix;
-                                        let w_idx = ((oc * c_in + ic) * kh + i) * kw + j;
-
-                                        w_grad[w_idx] += g * data_clone[in_idx];
-                                        padded_in_grad[in_idx] += g * weight_clone[w_idx];
+                                for ic in 0..c_in {
+                                    for i in 0..kh {
+                                        for j in 0..kw {
+                                            let iy = oy * stride + i;
+                                            let ix = ox * stride + j;
+                                            let in_local = (ic * ph + iy) * pw + ix;
+                                            let w_idx = ((oc * c_in + ic) * kh + i) * kw + j;
+                                            in_chunk[in_local] += g * weight_clone[w_idx];
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                }
-            }
+                });
 
             {
                 let mut ig = input_clone.borrow_mut();
