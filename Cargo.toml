@@ -10,6 +10,10 @@ criterion = "0.5"
 rand = "0.8"
 rand_distr = "0.4"
 rayon = "1.10"
+matrixmultiply = { version = "0.3", optional = true }
+
+[features]
+blas = ["matrixmultiply"]
 
 [[bench]]
 name = "matmul_bench"

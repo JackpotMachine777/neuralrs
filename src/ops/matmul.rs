@@ -1,9 +1,45 @@
 use crate::tensor::Tensor;
 
-#[cfg(target_arch = "x86_64")]
-pub fn matmul(a: &Tensor, b: &Tensor) -> Tensor{
+#[cfg(feature = "blas")]
+pub fn matmul(a: &Tensor, b: &Tensor) -> Tensor {
+    use crate::storage::Storage;
+    use crate::dtype::DType;
+
+    let m = a.shape[0];
+    let k = a.shape[1];
+    let n = b.shape[1];
+
+    if k != b.shape[0] {
+        panic!("Shapes are not matching");
+    }
+
+    let a_data = &a.storage.data;
+    let b_data = &b.storage.data;
+    let mut c = vec![0.0f32; m * n];
+
+    unsafe {
+        matrixmultiply::sgemm(
+            m, k, n,
+            1.0,
+            a_data.as_ptr(), k as isize, 1,
+            b_data.as_ptr(), n as isize, 1,
+            0.0,
+            c.as_mut_ptr(), n as isize, 1,
+        );
+    }
+
+    Tensor {
+        storage: Storage::new(c),
+        grad: vec![0.0; m * n],
+        shape: vec![m, n],
+        dtype: DType::Float32,
+    }
+}
+
+#[cfg(all(target_arch = "x86_64", not(feature = "blas")))]
+pub fn matmul(a: &Tensor, b: &Tensor) -> Tensor {
     use crate::ops::simd::matmul_simd;
-    
+
     if a.shape[1] != b.shape[0] {
         panic!("Shapes are not matching");
     }
@@ -11,7 +47,7 @@ pub fn matmul(a: &Tensor, b: &Tensor) -> Tensor{
     matmul_simd(a, b)
 }
 
-#[cfg(not(target_arch = "x86_64"))]
+#[cfg(all(not(target_arch = "x86_64"), not(feature = "blas")))]
 pub fn matmul(a: &Tensor, b: &Tensor) -> Tensor {
     use crate::storage::Storage;
     use crate::dtype::DType;
@@ -21,7 +57,7 @@ pub fn matmul(a: &Tensor, b: &Tensor) -> Tensor {
     let n = b.shape[1];
     let k = a.shape[1];
 
-    if k != b.shape[0]{
+    if k != b.shape[0] {
         panic!("Shapes are not matching");
     }
 
@@ -42,7 +78,7 @@ pub fn matmul(a: &Tensor, b: &Tensor) -> Tensor {
                 row[j] = sum;
             }
         });
-    
+
     Tensor {
         storage: Storage::new(res),
         grad: vec![0.0; m * n],
