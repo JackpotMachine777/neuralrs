@@ -2,9 +2,11 @@ use std::{rc::Rc, cell::RefCell};
 use crate::autograd::node::Node;
 
 pub fn concat_cols(parts: Vec<Rc<RefCell<Node>>>) -> Rc<RefCell<Node>> {
-    let rows = parts[0].borrow().shape[0];
-    let widths: Vec<usize> = parts.iter().map(|p| p.borrow().shape[1]).collect();
+    let widths: Vec<usize> = parts.iter().map(|p| *p.borrow().shape.last().unwrap()).collect();
     let total_cols: usize = widths.iter().sum();
+
+    let first_len = parts[0].borrow().data.len();
+    let rows = first_len / widths[0];
 
     let mut out = vec![0.0; rows * total_cols];
     let mut col_offset = 0;
@@ -19,7 +21,11 @@ pub fn concat_cols(parts: Vec<Rc<RefCell<Node>>>) -> Rc<RefCell<Node>> {
         col_offset += pw;
     }
 
-    let result = Node::new(out, vec![rows, total_cols]);
+    let mut out_shape = parts[0].borrow().shape.clone();
+    let last = out_shape.len() - 1;
+    out_shape[last] = total_cols;
+
+    let result = Node::new(out, out_shape);
     {
         let mut node = result.borrow_mut();
         node.parents = parts.clone();
@@ -38,6 +44,7 @@ pub fn concat_cols(parts: Vec<Rc<RefCell<Node>>>) -> Rc<RefCell<Node>> {
             }
             col_offset += pw;
         }
+        let _ = col_offset;
     }));
 
     result

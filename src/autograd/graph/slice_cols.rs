@@ -4,8 +4,9 @@ use crate::autograd::node::Node;
 pub fn slice_cols(a: Rc<RefCell<Node>>, col_start: usize, col_end: usize) -> Rc<RefCell<Node>> {
     let data = a.borrow().data.clone();
     let shape = a.borrow().shape.clone();
-    let rows = shape[0];
-    let total_cols = shape[1];
+
+    let total_cols = *shape.last().unwrap();
+    let rows = data.len() / total_cols;
     let slice_w = col_end - col_start;
 
     let mut out = vec![0.0; rows * slice_w];
@@ -15,7 +16,11 @@ pub fn slice_cols(a: Rc<RefCell<Node>>, col_start: usize, col_end: usize) -> Rc<
         }
     }
 
-    let result = Node::new(out, vec![rows, slice_w]);
+    let mut out_shape = shape.clone();
+    let last = out_shape.len() - 1;
+    out_shape[last] = slice_w;
+
+    let result = Node::new(out, out_shape);
     {
         let mut node = result.borrow_mut();
         node.parents = vec![a.clone()];
