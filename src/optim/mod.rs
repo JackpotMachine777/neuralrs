@@ -4,3 +4,6 @@ pub mod rmsprop;
 pub mod adamw;
 pub mod clip;
 pub mod scheduler;
+pub mod adagrad;
+pub mod nadam;
+pub mod nesterov;
