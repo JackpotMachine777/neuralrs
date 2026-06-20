@@ -2,6 +2,7 @@ use crate::tensor::Tensor;
 use crate::storage::Storage;
 use crate::dtype::DType;
 
+/// Transposes a 2-D tensor (swaps rows and columns).
 pub fn transpose(t: &Tensor) -> Tensor{
     let rows = t.shape[0];
     let cols = t.shape[1];

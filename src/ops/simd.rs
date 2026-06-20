@@ -4,6 +4,7 @@ use crate::dtype::DType;
 use rayon::prelude::*;
 
 #[cfg(target_arch = "x86_64")]
+/// Dot product of two slices using AVX2 SIMD where available, for speed.
 pub fn dot_simd(a: &[f32], b: &[f32]) -> f32 {
     use std::arch::x86_64::*;
 
@@ -36,6 +37,8 @@ pub fn dot_simd(a: &[f32], b: &[f32]) -> f32 {
 }
 
 #[cfg(target_arch = "x86_64")]
+/// SIMD-accelerated matrix multiplication — the default matmul backend on
+/// x86-64.
 pub fn matmul_simd(a: &Tensor, b: &Tensor) -> Tensor {
     let m = a.shape[0];
     let k = a.shape[1];

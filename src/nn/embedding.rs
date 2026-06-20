@@ -3,6 +3,12 @@ use crate::autograd::node::Node;
 use std::rc::Rc;
 use std::cell::RefCell;
 
+/// A lookup table mapping integer token IDs to learnable vectors.
+///
+/// Given a sequence of token indices, `forward` returns a `[seq_len,
+/// embedding_dim]` matrix by looking up each token's row in the `weight` table.
+/// During backward, gradients land only on the rows of tokens that actually
+/// appeared. This is the standard first layer for sequence models.
 pub struct Embedding {
     pub weight: Tensor,
     pub vocab_size: usize,

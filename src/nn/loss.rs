@@ -2,11 +2,14 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use crate::autograd::node::Node;
 
+/// Common interface for loss functions: `forward` returns the scalar loss,
+/// `backward` seeds the gradient and kicks off backpropagation.
 pub trait Loss {
     fn forward(&self, pred: &Rc<RefCell<Node>>, target: &Rc<RefCell<Node>>) -> f32;
     fn backward(&self, pred: &Rc<RefCell<Node>>, target: &Rc<RefCell<Node>>);
 }
 
+/// Mean squared error loss: the average of `(prediction - target)²`.
 pub struct MSELoss;
 
 impl Loss for MSELoss {
@@ -34,6 +37,13 @@ impl Loss for MSELoss {
     }
 }
 
+/// Cross-entropy loss for classification.
+///
+/// Takes **raw logits** (not softmaxed) and applies a numerically-stable
+/// log-softmax internally, then the cross-entropy against the one-hot target.
+/// Doing the log-softmax inside avoids the overflow you'd get from applying
+/// softmax separately — which is why you feed it the network's raw output
+/// directly.
 pub struct CrossEntropyLoss;
 
 impl Loss for CrossEntropyLoss {

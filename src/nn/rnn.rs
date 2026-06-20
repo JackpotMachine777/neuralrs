@@ -4,6 +4,12 @@ use crate::autograd::graph;
 use std::rc::Rc;
 use std::cell::RefCell;
 
+/// A single vanilla RNN cell: `h_new = tanh(x @ w_xh + h_prev @ w_hh + bias)`.
+///
+/// Processes one timestep at a time via `step`, taking the current input and the
+/// previous hidden state and producing the next hidden state. Run it in a loop
+/// over a sequence to process the whole thing, carrying the hidden state
+/// forward. The `*_node` fields hold the weight graph nodes for gradient sync.
 pub struct RNNCell {
     pub w_xh: Tensor,
     pub w_hh: Tensor,

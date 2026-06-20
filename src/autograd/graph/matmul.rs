@@ -1,6 +1,14 @@
 use std::{rc::Rc, cell::RefCell};
 use crate::autograd::node::Node;
 
+/// Matrix multiplication of two 2-D nodes: `[m, k] x [k, n] -> [m, n]`.
+///
+/// This is the autograd-aware version (it builds a graph node); the plain,
+/// faster matmul without gradient tracking lives in `ops::matmul`.
+///
+/// Backward uses the standard matmul gradient rules: the gradient w.r.t. `a` is
+/// `grad @ b^T`, and the gradient w.r.t. `b` is `a^T @ grad` — both written out
+/// here as explicit loops.
 pub fn matmul(a: Rc<RefCell<Node>>, b: Rc<RefCell<Node>>) -> Rc<RefCell<Node>> {
     let m = a.borrow().shape[0];
     let k = a.borrow().shape[1];

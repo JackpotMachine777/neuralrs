@@ -5,6 +5,10 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use crate::autograd::node::Node;
 
+/// ReLU as a `Module` you can drop into a [`Sequential`]. Wraps the `relu`
+/// autograd op.
+///
+/// [`Sequential`]: crate::nn::sequential::Sequential
 pub struct ReLU{ }
 
 impl Module for ReLU {

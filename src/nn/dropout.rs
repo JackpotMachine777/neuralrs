@@ -4,6 +4,14 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use crate::autograd::node::Node;
 
+/// Dropout: during training, randomly zeroes out each value with probability
+/// `probability`, and scales the survivors up to keep the overall magnitude
+/// roughly the same.
+///
+/// In eval mode it does nothing (passes the input through). Helps prevent
+/// overfitting by stopping the network from leaning too hard on any one
+/// activation. The `mask` records which values survived so backward can route
+/// gradients the same way.
 pub struct Dropout {
     pub probability: f32,
     pub mask: Vec<f32>,

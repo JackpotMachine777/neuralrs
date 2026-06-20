@@ -9,6 +9,19 @@ use crate::autograd::graph::reshape::reshape;
 use std::rc::Rc;
 use std::cell::RefCell;
 
+/// A full Transformer encoder block.
+///
+/// Wires together the standard pieces: multi-head attention, then a
+/// position-wise feed-forward network (`ff1` → ReLU → `ff2`), each wrapped in a
+/// residual connection and layer norm. The flow is:
+/// `x → MHA → add(x) → norm1 → FFN → add → norm2`. Works on batched input
+/// `[batch, seq, d_model]`.
+///
+/// Note: this assembles other modules directly rather than implementing
+/// [`Module`], because attention needs a different call shape than a plain
+/// `forward`.
+///
+/// [`Module`]: crate::nn::module::Module
 pub struct TransformerBlock {
     pub mha: MultiHeadAttention,
     pub norm1: LayerNorm,

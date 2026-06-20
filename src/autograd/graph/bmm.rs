@@ -1,6 +1,15 @@
 use std::{rc::Rc, cell::RefCell};
 use crate::autograd::node::Node;
 
+/// Batched matrix multiply: `[batch, m, k] x [batch, k, n] -> [batch, m, n]`.
+///
+/// Does an independent matmul for each item in the batch. Used by batched
+/// attention, where every sequence in the batch gets its own Q/K/V products.
+///
+/// Backward applies the same matmul gradient rules as [`matmul`], once per batch
+/// item.
+///
+/// [`matmul`]: crate::autograd::graph::matmul::matmul
 pub fn bmm(a: Rc<RefCell<Node>>, b: Rc<RefCell<Node>>) -> Rc<RefCell<Node>> {
     let a_shape = a.borrow().shape.clone();
     let b_shape = b.borrow().shape.clone();

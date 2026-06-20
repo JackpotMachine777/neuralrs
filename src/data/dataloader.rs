@@ -1,6 +1,12 @@
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 
+/// Feeds data to training in shuffled mini-batches, with optional augmentation.
+///
+/// Holds the full dataset (inputs + targets), splits it into batches of
+/// `batch_size`, and can shuffle between epochs. An optional augmentation
+/// function can be applied to each input on the fly (the MNIST examples use this
+/// for random pixel shifts).
 pub struct DataLoader {
     pub inputs: Vec<Vec<f32>>,
     pub targets: Vec<Vec<f32>>,

@@ -1,6 +1,8 @@
 use std::fs::File;
 use std::io::{Read, BufReader};
 
+/// Reads MNIST images from the IDX file format into a list of flat `f32` vectors
+/// (pixel values normalized), plus the image dimensions.
 pub fn read_images(path: &str) -> (Vec<Vec<f32>>, usize, usize, usize) {
     let file = File::open(path).expect("cannot open MNIST image file");
     let mut reader = BufReader::new(file);
@@ -26,6 +28,7 @@ pub fn read_images(path: &str) -> (Vec<Vec<f32>>, usize, usize, usize) {
     (images, count, rows, cols)
 }
 
+/// Reads MNIST labels as one-hot vectors (length 10), ready to use as targets.
 pub fn read_labels(path: &str) -> Vec<Vec<f32>> {
     let file = File::open(path).expect("cannot open MNIST label file");
     let mut reader = BufReader::new(file);
@@ -45,6 +48,7 @@ pub fn read_labels(path: &str) -> Vec<Vec<f32>> {
     labels
 }
 
+/// Reads MNIST labels as plain digit indices (0–9), handy for accuracy checks.
 pub fn read_labels_raw(path: &str) -> Vec<usize> {
     let file = File::open(path).expect("cannot open MNIST label file");
     let mut reader = BufReader::new(file);

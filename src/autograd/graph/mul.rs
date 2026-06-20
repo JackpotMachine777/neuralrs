@@ -4,6 +4,11 @@ use rayon::prelude::*;
 
 const PAR_THRESHOLD: usize = 8192;
 
+/// Multiplies two same-shape nodes element-wise, tracking gradients.
+///
+/// Backward follows the product rule: the gradient flowing to `a` is the
+/// incoming gradient times `b`'s values, and the gradient to `b` is the incoming
+/// gradient times `a`'s values. (Large tensors split the work across threads.)
 pub fn mul(a: Rc<RefCell<Node>>, b: Rc<RefCell<Node>>) -> Rc<RefCell<Node>> {
     let a_data = a.borrow().data.clone();
     let b_data = b.borrow().data.clone();

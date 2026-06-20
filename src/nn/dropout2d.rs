@@ -4,6 +4,12 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use crate::autograd::node::Node;
 
+/// Spatial dropout for conv feature maps: drops entire channels at once (instead
+/// of individual pixels) during training.
+///
+/// Dropping whole channels works better than per-pixel dropout for
+/// convolutional features, where neighbouring pixels are strongly correlated.
+/// Does nothing in eval mode.
 pub struct Dropout2d {
     pub probability: f32,
     pub training: bool,

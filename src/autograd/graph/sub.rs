@@ -4,6 +4,8 @@ use rayon::prelude::*;
 
 const PAR_THRESHOLD: usize = 8192;
 
+/// Subtracts two nodes element-wise. Backward sends `+grad` to the first operand
+/// and `-grad` to the second.
 pub fn sub(a: Rc<RefCell<Node>>, b: Rc<RefCell<Node>>) -> Rc<RefCell<Node>> {
     let a_data = a.borrow().data.clone();
     let b_data = b.borrow().data.clone();

@@ -5,6 +5,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use crate::autograd::node::Node;
 
+/// Sigmoid as a `Module`, wrapping the `sigmoid` autograd op.
 pub struct Sigmoid{ }
 
 impl Module for Sigmoid{

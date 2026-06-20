@@ -4,6 +4,13 @@ use crate::autograd::node::Node;
 use std::rc::Rc;
 use std::cell::RefCell;
 
+/// Average pooling over `kernel × kernel` windows, taking the mean of each.
+///
+/// Like [`MaxPool2d`] but averages instead of taking the max. Backward spreads
+/// each output's gradient evenly across all the inputs that fed into that
+/// window.
+///
+/// [`MaxPool2d`]: crate::nn::maxpool::MaxPool2d
 pub struct AvgPool2d {
     pub kernel: usize,
     pub stride: usize,

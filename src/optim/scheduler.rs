@@ -1,7 +1,10 @@
+/// Interface for learning-rate schedules: given the current step (or epoch),
+/// return the learning rate to use.
 pub trait Scheduler {
     fn get_lr(&self, step: usize) -> f32;
 }
 
+/// Drops the learning rate by a fixed factor every `step_size` steps.
 pub struct StepLR {
     pub base_lr: f32,
     pub step_size: usize,
@@ -15,6 +18,8 @@ impl Scheduler for StepLR {
     }
 }
 
+/// Multiplies the learning rate by a fixed `gamma` every step — smooth
+/// exponential decay.
 pub struct ExponentialLR {
     pub base_lr: f32,
     pub gamma: f32,
@@ -26,6 +31,8 @@ impl Scheduler for ExponentialLR {
     }
 }
 
+/// Cosine annealing: the learning rate follows a cosine curve from its starting
+/// value down to a minimum over `t_max` steps.
 pub struct CosineAnnealingLR {
     pub base_lr: f32,
     pub min_lr: f32,
@@ -41,6 +48,11 @@ impl Scheduler for CosineAnnealingLR {
     }
 }
 
+/// Linear warmup followed by cosine annealing.
+///
+/// Ramps the learning rate up for the first `warmup_steps` (helps stabilize
+/// early training), then decays it along a cosine curve down to `min_lr`. This
+/// is the schedule used in the MNIST scheduling example.
 pub struct WarmupCosine {
     pub base_lr: f32,
     pub min_lr: f32,

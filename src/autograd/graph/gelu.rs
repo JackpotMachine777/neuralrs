@@ -4,6 +4,8 @@ use rayon::prelude::*;
 
 const PAR_THRESHOLD: usize = 8192;
 
+/// GELU activation (tanh approximation) — a smooth alternative to ReLU. Backward
+/// uses the derivative of that approximation.
 pub fn gelu(a: Rc<RefCell<Node>>) -> Rc<RefCell<Node>> {
     let c = 0.7978845608_f32;
     let input = a.borrow().data.clone();

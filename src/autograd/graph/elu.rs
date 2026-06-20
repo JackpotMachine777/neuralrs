@@ -4,6 +4,9 @@ use rayon::prelude::*;
 
 const PAR_THRESHOLD: usize = 8192;
 
+/// ELU activation: linear for positive inputs, a smooth exponential curve for
+/// negative ones (scaled by `alpha`). Backward is `1` where the input was
+/// positive and `alpha·eˣ` where it was negative.
 pub fn elu(a: Rc<RefCell<Node>>, alpha: f32) -> Rc<RefCell<Node>> {
     let input = a.borrow().data.clone();
     let data: Vec<f32> = if input.len() > PAR_THRESHOLD {

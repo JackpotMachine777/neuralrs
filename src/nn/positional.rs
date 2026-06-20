@@ -3,6 +3,13 @@ use crate::autograd::graph;
 use std::rc::Rc;
 use std::cell::RefCell;
 
+/// Sinusoidal positional encoding — adds position information to token
+/// embeddings.
+///
+/// Self-attention has no built-in sense of order, so this adds a fixed pattern
+/// of sines and cosines (different frequency per dimension) that tells the model
+/// where each token sits in the sequence. Precomputed once up to `max_len`;
+/// `forward` just adds the right slice to the input.
 pub struct PositionalEncoding {
     pub d_model: usize,
     pub max_len: usize,

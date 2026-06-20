@@ -2,6 +2,7 @@ use crate::tensor::Tensor;
 use crate::storage::Storage;
 use crate::dtype::DType;
 
+/// Cross-entropy loss between predicted probabilities and one-hot targets.
 pub fn cross_entropy(pred: &Tensor, target: &Tensor) -> f32 {
     if pred.shape != target.shape{
         panic!("Shapes are different");

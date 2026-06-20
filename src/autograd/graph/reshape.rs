@@ -1,6 +1,11 @@
 use std::{rc::Rc, cell::RefCell};
 use crate::autograd::node::Node;
 
+/// Reinterprets a node under a new shape, keeping the same underlying values.
+///
+/// The total number of elements has to match (it asserts this). Since reshape
+/// only relabels the layout and doesn't move or change any numbers, backward
+/// just passes the gradient straight through 1:1.
 pub fn reshape(a: Rc<RefCell<Node>>, new_shape: Vec<usize>) -> Rc<RefCell<Node>> {
     let data = a.borrow().data.clone();
 

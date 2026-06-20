@@ -1,6 +1,12 @@
 use std::{rc::Rc, cell::RefCell};
 use crate::autograd::node::Node;
 
+/// Transposes the last two dimensions of a node, batched over any leading dims.
+///
+/// So `[rows, cols]` becomes `[cols, rows]`, and `[batch, rows, cols]` becomes
+/// `[batch, cols, rows]`. Used in attention to line up keys for the Q·Kᵀ product.
+///
+/// Backward just transposes the incoming gradient back the same way.
 pub fn transpose(a: Rc<RefCell<Node>>) -> Rc<RefCell<Node>> {
     let data = a.borrow().data.clone();
     let shape = a.borrow().shape.clone();

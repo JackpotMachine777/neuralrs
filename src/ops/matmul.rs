@@ -1,3 +1,11 @@
+//! Plain matrix multiplication (no autograd).
+//!
+//! This is the fast, gradient-free matmul used under the hood. It has three
+//! implementations picked at compile time: an optional BLAS backend
+//! (`--features blas`), a hand-written AVX2 SIMD version on x86-64 (the
+//! default), and a parallel fallback everywhere else. The autograd-aware matmul
+//! that builds graph nodes lives in `autograd::graph::matmul`.
+
 use crate::tensor::Tensor;
 
 #[cfg(feature = "blas")]

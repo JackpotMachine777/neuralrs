@@ -4,6 +4,8 @@ use rayon::prelude::*;
 
 const PAR_THRESHOLD: usize = 8192;
 
+/// Raises each element to a fixed power `p`. Backward multiplies the gradient by
+/// `p · x^(p-1)`.
 pub fn pow(a: Rc<RefCell<Node>>, p: f32) -> Rc<RefCell<Node>> {
     let input = a.borrow().data.clone();
     let data: Vec<f32> = if input.len() > PAR_THRESHOLD {

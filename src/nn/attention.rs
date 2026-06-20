@@ -4,6 +4,7 @@ use crate::autograd::node::Node;
 use crate::autograd::graph;
 use crate::autograd::graph::bmm::bmm;
 
+/// Scaled dot-product attention for a single sequence: `softmax(Q·Kᵀ / √d) · V`.
 pub fn attention(
     q: Rc<RefCell<Node>>,
     k: Rc<RefCell<Node>>,
@@ -20,6 +21,8 @@ pub fn attention(
     graph::matmul(weights, v)
 }
 
+/// Batched scaled dot-product attention over `[batch, seq, d]`, using batched
+/// matmul so every sequence in the batch is handled at once.
 pub fn attention_batch(
     q: Rc<RefCell<Node>>,
     k: Rc<RefCell<Node>>,

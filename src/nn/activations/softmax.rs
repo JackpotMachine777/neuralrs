@@ -5,6 +5,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use crate::autograd::node::Node;
 
+/// Softmax as a `Module`, wrapping the `softmax` autograd op.
 pub struct Softmax{ }
 
 impl Module for Softmax{

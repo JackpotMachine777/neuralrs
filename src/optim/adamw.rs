@@ -1,6 +1,13 @@
 use crate::nn::module::Module;
 use crate::tensor::Tensor;
 
+/// AdamW optimizer — Adam with decoupled weight decay.
+///
+/// Same as [`ADAM`], but the weight decay is applied directly to the weights
+/// instead of being folded into the gradient. This is the version used in the
+/// MNIST examples, and generally the better-behaved one for regularization.
+///
+/// [`ADAM`]: crate::optim::adam::ADAM
 pub struct ADAMW{
     pub lr: f32,
     pub beta1: f32,

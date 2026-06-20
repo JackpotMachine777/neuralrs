@@ -4,6 +4,9 @@ use crate::nn::module::Module;
 use std::fs::File;
 use std::io::{Write, BufRead, BufReader};
 
+/// Saves a single [`Linear`] layer's weights and bias to a file.
+///
+/// [`Linear`]: crate::nn::linear::Linear
 pub fn save_linear(layer: &Linear, path: &str) {
     let mut file = File::create(path).expect("cannot create file");
 
@@ -24,6 +27,9 @@ pub fn save_linear(layer: &Linear, path: &str) {
     }
 }
 
+/// Loads a [`Linear`] layer back from a file written by [`save_linear`].
+///
+/// [`Linear`]: crate::nn::linear::Linear
 pub fn load_linear(path: &str) -> Linear {
     let file = File::open(path).expect("cannot open file");
     let reader = BufReader::new(file);
@@ -61,6 +67,10 @@ pub fn load_linear(path: &str) -> Linear {
     }
 }
 
+/// Saves all of a model's parameters to a file.
+///
+/// Walks the model's `parameters()` and writes them out, so training can be
+/// resumed or the trained weights reused later.
 pub fn save_model<M: Module>(model: &mut M, path: &str) {
     let mut file = File::create(path).expect("cannot create file");
     let params = model.parameters();
@@ -76,6 +86,7 @@ pub fn save_model<M: Module>(model: &mut M, path: &str) {
     }
 }
 
+/// Loads parameters from a file back into a model with matching architecture.
 pub fn load_model<M: Module>(model: &mut M, path: &str) {
     let file = File::open(path).expect("cannot open file");
     let reader = BufReader::new(file);

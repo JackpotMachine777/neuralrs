@@ -2,6 +2,7 @@ use crate::tensor::Tensor;
 use crate::storage::Storage;
 use crate::dtype::DType;
 
+/// Mean squared error between two tensors.
 pub fn mse(pred: &Tensor, target: &Tensor) -> f32{
     if pred.shape != target.shape{
         panic!("Shapes are different");

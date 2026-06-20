@@ -1,6 +1,10 @@
 use crate::nn::module::Module;
 use crate::tensor::Tensor;
 
+/// NAdam optimizer — Adam with Nesterov-style momentum.
+///
+/// Combines Adam's per-weight adaptive steps with the look-ahead idea from
+/// Nesterov momentum.
 pub struct NAdam {
     pub lr: f32,
     pub beta1: f32,

@@ -4,6 +4,7 @@ use rayon::prelude::*;
 
 const PAR_THRESHOLD: usize = 8192;
 
+/// Element-wise natural log. Backward multiplies the gradient by `1/x`.
 pub fn log(a: Rc<RefCell<Node>>) -> Rc<RefCell<Node>> {
     let input = a.borrow().data.clone();
     let data: Vec<f32> = if input.len() > PAR_THRESHOLD {

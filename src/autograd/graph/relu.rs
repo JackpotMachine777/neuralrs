@@ -4,6 +4,11 @@ use rayon::prelude::*;
 
 const PAR_THRESHOLD: usize = 8192;
 
+/// ReLU activation: keeps positive values, clamps everything else to zero.
+///
+/// Backward passes the gradient through wherever the input was positive, and
+/// blocks it (zero) where the input was zero or negative — a "dead" unit gets no
+/// gradient.
 pub fn relu(a: Rc<RefCell<Node>>) -> Rc<RefCell<Node>> {
     let input = a.borrow().data.clone();
 

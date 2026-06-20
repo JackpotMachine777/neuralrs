@@ -4,6 +4,13 @@ use crate::autograd::node::Node;
 use std::rc::Rc;
 use std::cell::RefCell;
 
+/// Batch normalization for 4-D conv inputs (`[batch, channels, height, width]`).
+///
+/// Like [`BatchNorm`], but normalizes per channel, pooling the statistics over
+/// the batch *and* both spatial dimensions (every pixel in a channel shares the
+/// same mean and variance). This is the standard BN you put between conv layers.
+///
+/// [`BatchNorm`]: crate::nn::batchnorm::BatchNorm
 pub struct BatchNorm2d {
     pub gamma: Tensor,
     pub beta: Tensor,

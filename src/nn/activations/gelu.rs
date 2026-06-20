@@ -5,6 +5,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use crate::autograd::node::Node;
 
+/// GELU as a `Module`, wrapping the `gelu` autograd op.
 pub struct GELU {}
 
 impl Module for GELU {

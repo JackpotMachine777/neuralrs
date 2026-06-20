@@ -4,6 +4,8 @@ use rayon::prelude::*;
 
 const PAR_THRESHOLD: usize = 8192;
 
+/// Multiplies every element by a fixed scalar `s`. Backward simply scales the
+/// gradient by the same `s`.
 pub fn scale(a: Rc<RefCell<Node>>, s: f32) -> Rc<RefCell<Node>> {
     let input = a.borrow().data.clone();
     let data: Vec<f32> = if input.len() > PAR_THRESHOLD {

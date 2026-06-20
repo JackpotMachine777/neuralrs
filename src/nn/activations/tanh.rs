@@ -5,6 +5,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use crate::autograd::node::Node;
 
+/// Tanh as a `Module`, wrapping the `tanh` autograd op.
 pub struct Tanh{ }
 
 impl Module for Tanh{

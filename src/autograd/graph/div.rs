@@ -4,6 +4,8 @@ use rayon::prelude::*;
 
 const PAR_THRESHOLD: usize = 8192;
 
+/// Divides two nodes element-wise (`a / b`). Backward follows the quotient rule:
+/// `grad / b` to `a`, and `-grad * a / b²` to `b`.
 pub fn div(a: Rc<RefCell<Node>>, b: Rc<RefCell<Node>>) -> Rc<RefCell<Node>> {
     let a_data = a.borrow().data.clone();
     let b_data = b.borrow().data.clone();

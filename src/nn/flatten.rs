@@ -4,6 +4,11 @@ use crate::autograd::node::Node;
 use std::rc::Rc;
 use std::cell::RefCell;
 
+/// Flattens everything except the batch dimension into one long vector per
+/// sample: `[batch, c, h, w]` becomes `[batch, c*h*w]`.
+///
+/// Used to go from the conv part of a network into the dense part. It only
+/// relabels the shape, so backward passes the gradient straight through.
 pub struct Flatten { }
 
 impl Module for Flatten {

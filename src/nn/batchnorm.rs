@@ -4,6 +4,13 @@ use crate::autograd::node::Node;
 use std::rc::Rc;
 use std::cell::RefCell;
 
+/// Batch normalization for 2-D inputs (`[batch, features]`).
+///
+/// Normalizes each feature across the batch (zero mean, unit variance), then
+/// scales and shifts with learnable `gamma` and `beta`. Keeps a running mean and
+/// variance during training so eval can normalize without needing a batch. The
+/// `training` flag switches between using batch stats (train) and the running
+/// stats (eval).
 pub struct BatchNorm {
     pub gamma: Tensor,
     pub beta: Tensor,

@@ -4,6 +4,16 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use crate::autograd::node::Node;
 
+/// A stack of layers run one after another.
+///
+/// Holds a list of boxed [`Module`]s and chains them: `forward` feeds the input
+/// through the first layer, that output into the second, and so on. The other
+/// methods (`parameters`, `zero_grad`, `sync_grads`, `set_training`) just fan out
+/// to every layer in the list.
+///
+/// This is the usual way to build a model — see the MNIST examples.
+///
+/// [`Module`]: crate::nn::module::Module
 pub struct Sequential{
     pub list: Vec<Box<dyn Module>>
 }

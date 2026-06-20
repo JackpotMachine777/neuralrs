@@ -5,6 +5,13 @@ use crate::nn::attention::attention;
 use std::rc::Rc;
 use std::cell::RefCell;
 
+/// Single-head self-attention over a sequence `[seq, d_model]`.
+///
+/// Projects the input into queries, keys, and values, then lets each position
+/// attend to all positions: `softmax(Q·Kᵀ / √d_k) · V`. The simpler,
+/// single-head sibling of [`MultiHeadAttention`].
+///
+/// [`MultiHeadAttention`]: crate::nn::multihead::MultiHeadAttention
 pub struct SelfAttention {
     pub w_q: Tensor,
     pub w_k: Tensor,

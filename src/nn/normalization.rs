@@ -4,6 +4,13 @@ use crate::autograd::node::Node;
 use std::rc::Rc;
 use std::cell::RefCell;
 
+/// Layer normalization: normalizes each row over its last dimension.
+///
+/// Unlike batch norm, this normalizes *within* a single sample (across its
+/// features) instead of across the batch, so it doesn't depend on batch size and
+/// behaves the same in training and eval. Then scales and shifts with learnable
+/// `gamma` and `beta`. This is the normalization used inside the Transformer
+/// block.
 pub struct LayerNorm {
     pub gamma: Tensor,
     pub beta: Tensor,

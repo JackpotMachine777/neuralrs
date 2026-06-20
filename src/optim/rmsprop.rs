@@ -1,6 +1,11 @@
 use crate::nn::module::Module;
 use crate::tensor::Tensor;
 
+/// RMSProp optimizer.
+///
+/// Scales each weight's step by a running average of its squared gradients, so
+/// dimensions with consistently large gradients take smaller steps. A
+/// predecessor to Adam.
 pub struct RMSProp{
     pub lr: f32,
     pub beta: f32,

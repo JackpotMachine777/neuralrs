@@ -2,6 +2,7 @@ use crate::tensor::Tensor;
 use crate::storage::Storage;
 use crate::dtype::DType;
 
+/// Binary cross-entropy loss between predictions and targets.
 pub fn bce(pred: &Tensor, target: &Tensor) -> f32{
     if pred.shape != target.shape{
         panic!("Shapes are different");

@@ -3,6 +3,14 @@ use crate::storage::Storage;
 use crate::dtype::DType;
 
 impl Tensor {
+    /// Builds a tensor from a flat data vector and a shape.
+    ///
+    /// The shape has to match the data: multiply the dimensions together and you
+    /// should get the number of values, otherwise it panics. The gradient buffer
+    /// starts out all zeros.
+    ///
+    /// # Panics
+    /// If `shape` doesn't match how many elements are in `data`.
     pub fn new(data: Vec<f32>, shape: Vec<usize>) -> Self {
         let count: usize = shape.iter().product();
 
@@ -20,6 +28,17 @@ impl Tensor {
         }
     }
 
+    /// Adds two tensors element by element, with bias-style broadcasting.
+    ///
+    /// Same shape? Adds them straight across. The one special case: a 1-D tensor
+    /// `[features]` can be added to a 2-D tensor `[batch, features]`, and it gets
+    /// reused for every row in the batch — that's the classic "add a bias vector
+    /// to a batch of rows" move.
+    ///
+    /// Plain data op, doesn't track gradients.
+    ///
+    /// # Panics
+    /// If the shapes aren't equal and aren't a valid bias broadcast either.
     pub fn add(&self, other: &Tensor) -> Tensor {
         if self.shape == other.shape {
             let mut result = Vec::with_capacity(self.storage.data.len());
@@ -64,6 +83,12 @@ impl Tensor {
         panic!("Shapes are not compatible for add");
     }
 
+    /// Multiplies two same-shape tensors element by element.
+    ///
+    /// Plain data op, doesn't track gradients.
+    ///
+    /// # Panics
+    /// If the two shapes don't match.
     pub fn mul(&self, other: &Tensor) -> Tensor {
         if self.shape != other.shape {
             panic!("Shapes are different");

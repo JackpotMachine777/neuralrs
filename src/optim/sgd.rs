@@ -1,6 +1,11 @@
 use crate::nn::module::Module;
 use crate::tensor::Tensor;
 
+/// Stochastic gradient descent with momentum.
+///
+/// The classic optimizer: step each weight in the direction of its negative
+/// gradient, with a `momentum` term that smooths the updates by carrying some of
+/// the previous step's velocity forward.
 pub struct SGD{
     pub lr: f32,
     pub momentum: f32,

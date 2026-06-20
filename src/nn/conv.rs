@@ -5,6 +5,15 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use rayon::prelude::*;
 
+/// A 2-D convolution layer for image-like inputs (`[batch, channels, height,
+/// width]`).
+///
+/// Slides `c_out` learnable filters of size `kh × kw` over the input, with
+/// configurable `stride` and zero-`padding`. This layer has a hand-written
+/// forward and backward (the backward is parallelized with Rayon), rather than
+/// being built from smaller graph ops, since convolution doesn't map cleanly
+/// onto them. The `*_grad` fields are shared accumulators for the weight and
+/// bias gradients.
 pub struct Conv2d {
     pub weight: Tensor,
     pub bias: Tensor,

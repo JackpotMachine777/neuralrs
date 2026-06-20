@@ -7,6 +7,13 @@ use std::cell::RefCell;
 use crate::nn::attention::attention_batch;
 use crate::autograd::graph::reshape::reshape;
 
+/// Multi-head self-attention.
+///
+/// Splits the model dimension into `num_heads` separate heads, runs attention in
+/// each one independently (so different heads can focus on different
+/// relationships), then concatenates the results and projects them back through
+/// `w_o`. Has both a single-sequence `forward` and a batched `forward_batch`.
+/// This is the attention used inside the Transformer block.
 pub struct MultiHeadAttention {
     pub w_q: Tensor,
     pub w_k: Tensor,

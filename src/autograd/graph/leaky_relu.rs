@@ -4,6 +4,9 @@ use rayon::prelude::*;
 
 const PAR_THRESHOLD: usize = 8192;
 
+/// Leaky ReLU: like ReLU, but negative inputs get a small `alpha` slope instead
+/// of zero. Backward passes the gradient through with slope `1` for positive
+/// inputs and `alpha` for negative ones.
 pub fn leaky_relu(a: Rc<RefCell<Node>>, alpha: f32) -> Rc<RefCell<Node>> {
     let input = a.borrow().data.clone();
     let data: Vec<f32> = if input.len() > PAR_THRESHOLD {

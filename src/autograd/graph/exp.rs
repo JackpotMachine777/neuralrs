@@ -4,6 +4,8 @@ use rayon::prelude::*;
 
 const PAR_THRESHOLD: usize = 8192;
 
+/// Element-wise `e^x`. Backward multiplies the gradient by the output itself
+/// (since the derivative of `eˣ` is `eˣ`).
 pub fn exp(a: Rc<RefCell<Node>>) -> Rc<RefCell<Node>> {
     let input = a.borrow().data.clone();
     let data: Vec<f32> = if input.len() > PAR_THRESHOLD {

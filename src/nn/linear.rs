@@ -5,6 +5,12 @@ use std::cell::RefCell;
 use crate::autograd::node::Node;
 use crate::autograd::graph;
 
+/// A fully-connected layer: `output = input @ weights + bias`.
+///
+/// Forward is literally a matmul followed by a bias add — both autograd ops, so
+/// gradients flow automatically. The `*_node` fields hold the graph nodes for
+/// the weights and bias from the last forward pass, so `sync_grads` can copy the
+/// computed gradients back into the weight tensors for the optimizer.
 pub struct Linear{
     pub weights: Tensor,
     pub bias: Tensor,

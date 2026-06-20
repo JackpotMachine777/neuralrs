@@ -4,6 +4,8 @@ use rayon::prelude::*;
 
 const PAR_THRESHOLD: usize = 8192;
 
+/// SiLU / Swish activation: `x · sigmoid(x)`, a smooth self-gating function.
+/// Backward uses `s + x·s·(1-s)`, where `s` is the sigmoid of the input.
 pub fn silu(a: Rc<RefCell<Node>>) -> Rc<RefCell<Node>> {
     let sig = |x: f32| 1.0 / (1.0 + (-x).exp());
     let input = a.borrow().data.clone();

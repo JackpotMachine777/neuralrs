@@ -1,6 +1,8 @@
 use crate::tensor::Tensor; 
 use crate::ops::matmul::matmul;
 
+/// Unrolls image patches into columns so a convolution can be done as one big
+/// matrix multiply (the im2col trick).
 pub fn im2col(
     data: &Vec<f32>,
     n: usize,
@@ -53,6 +55,7 @@ pub fn im2col(
     (col, col_h, col_w)
 }
 
+/// Convolution implemented via [`im2col`] plus a matrix multiply.
 pub fn conv2d_im2col(
     data: &Vec<f32>,
     weight: &Vec<f32>,

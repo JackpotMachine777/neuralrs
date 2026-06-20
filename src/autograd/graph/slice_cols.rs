@@ -1,6 +1,14 @@
 use std::{rc::Rc, cell::RefCell};
 use crate::autograd::node::Node;
 
+/// Takes a contiguous range of columns `[col_start, col_end)` from the last
+/// dimension, keeping all rows.
+///
+/// Used to split a wide tensor into pieces (for example, slicing out each head's
+/// share of the features in multi-head attention).
+///
+/// Backward scatters the incoming gradient back into the original column
+/// positions; everything outside the slice gets no gradient.
 pub fn slice_cols(a: Rc<RefCell<Node>>, col_start: usize, col_end: usize) -> Rc<RefCell<Node>> {
     let data = a.borrow().data.clone();
     let shape = a.borrow().shape.clone();

@@ -1,6 +1,16 @@
 use std::{rc::Rc, cell::RefCell};
 use crate::autograd::node::Node;
 
+/// Softmax over the last dimension, turning each row into a probability
+/// distribution (positive values that sum to 1).
+///
+/// Works on any shape — it treats the data as rows of length `last_dim` and
+/// softmaxes each one. Subtracts the row max before exponentiating, which avoids
+/// overflow without changing the result.
+///
+/// Backward uses the softmax Jacobian trick: for each row, `grad_in = out * (grad
+/// - sum(out * grad))`, which is the clean closed form instead of building the
+/// full Jacobian matrix.
 pub fn softmax(a: Rc<RefCell<Node>>) -> Rc<RefCell<Node>> {
     let data: Vec<f32> = a.borrow().data.clone();
     let shape = a.borrow().shape.clone();

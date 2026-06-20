@@ -1,6 +1,11 @@
 use crate::nn::module::Module;
 use crate::tensor::Tensor;
 
+/// SGD with Nesterov momentum.
+///
+/// A momentum variant that "looks ahead" — it computes the gradient at the point
+/// momentum is about to carry the weights to, which often converges a bit
+/// cleaner than plain momentum.
 pub struct NesterovSGD {
     pub lr: f32,
     pub momentum: f32,

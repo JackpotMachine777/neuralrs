@@ -1,6 +1,11 @@
 use crate::nn::module::Module;
 use crate::tensor::Tensor;
 
+/// Adam optimizer.
+///
+/// Adapts the step size per weight using running averages of the gradient
+/// (`m`, first moment) and its square (`v`, second moment), with bias
+/// correction. A solid default that usually trains faster than plain SGD.
 pub struct ADAM{
     pub lr: f32,
     pub beta1: f32,

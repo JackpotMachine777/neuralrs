@@ -1,6 +1,15 @@
 use std::{rc::Rc, cell::RefCell};
 use crate::autograd::node::Node;
 
+/// Adds two nodes element-wise (with bias broadcasting), tracking gradients.
+///
+/// Same-shape inputs add straight across. A 1-D `[features]` node added to a 2-D
+/// `[batch, features]` node broadcasts across the batch — that's how a bias is
+/// added to a batch of rows.
+///
+/// Backward: addition just passes the gradient straight through to both parents
+/// (1:1). For the broadcast case, the bias gets the gradient summed over the
+/// batch, since it was reused for every row.
 pub fn add(a: Rc<RefCell<Node>>, b: Rc<RefCell<Node>>) -> Rc<RefCell<Node>> {
     let a_data = a.borrow().data.clone(); 
     let a_shape = a.borrow().shape.clone();

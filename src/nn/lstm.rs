@@ -4,6 +4,13 @@ use crate::autograd::graph;
 use std::rc::Rc;
 use std::cell::RefCell;
 
+/// A single LSTM cell — an RNN cell with gates that let it carry information over
+/// longer sequences without the gradient vanishing as fast.
+///
+/// Has four gate weight sets (forget `f`, input `i`, output `o`, and candidate
+/// `g`), each with input weights (`w_*`), recurrent weights (`u_*`), and a bias
+/// (`b_*`). `step` takes the input plus the previous hidden and cell states and
+/// returns the new ones.
 pub struct LSTMCell {
     pub w_f: Tensor,
     pub u_f: Tensor,
@@ -22,6 +29,8 @@ pub struct LSTMCell {
     pub nodes: Option<LSTMNodes>,
 }
 
+/// Cached graph nodes from the last forward pass, used to sync gradients back
+/// into the cell's weight tensors.
 pub struct LSTMNodes {
     pub w_f: Rc<RefCell<Node>>, pub u_f: Rc<RefCell<Node>>, pub b_f: Rc<RefCell<Node>>,
     pub w_i: Rc<RefCell<Node>>, pub u_i: Rc<RefCell<Node>>, pub b_i: Rc<RefCell<Node>>,

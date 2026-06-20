@@ -2,6 +2,8 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use crate::autograd::node::Node;
 
+/// Mean squared error as an autograd op — returns the scalar loss while wiring
+/// the gradient into the graph.
 pub fn mse_node(pred: Rc<RefCell<Node>>, target: Rc<RefCell<Node>>) -> f32 {
     let p = pred.borrow();
     let t = target.borrow();

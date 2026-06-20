@@ -1,6 +1,15 @@
 use std::{rc::Rc, cell::RefCell};
 use crate::autograd::node::Node;
 
+/// Concatenates several nodes side by side along the last dimension.
+///
+/// The inverse of [`slice_cols`] — used to stitch the per-head attention outputs
+/// back into one wide tensor before the final projection.
+///
+/// Backward splits the incoming gradient back out to each part, matching the
+/// columns each one contributed.
+///
+/// [`slice_cols`]: crate::autograd::graph::slice_cols::slice_cols
 pub fn concat_cols(parts: Vec<Rc<RefCell<Node>>>) -> Rc<RefCell<Node>> {
     let widths: Vec<usize> = parts.iter().map(|p| *p.borrow().shape.last().unwrap()).collect();
     let total_cols: usize = widths.iter().sum();

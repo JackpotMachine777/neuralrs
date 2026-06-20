@@ -4,6 +4,11 @@ use crate::autograd::node::Node;
 use std::rc::Rc;
 use std::cell::RefCell;
 
+/// Max pooling over `kernel × kernel` windows, taking the largest value in each.
+///
+/// Shrinks the spatial size of feature maps. It remembers which input position
+/// won each window (the argmax), so backward sends the gradient only to those
+/// winning positions — everything else gets zero.
 pub struct MaxPool2d {
     pub kernel: usize,
     pub stride: usize,

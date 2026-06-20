@@ -3,6 +3,13 @@ use crate::nn::loss::Loss;
 use crate::data::dataloader::DataLoader;
 use crate::autograd::node::Node;
 
+/// A ready-made training loop for simple cases.
+///
+/// Runs `epochs` passes over the data loader: for each batch it does forward,
+/// computes the loss, backpropagates, syncs gradients, and steps a plain SGD
+/// update at the given `lr`. Returns the loss history. For anything fancier
+/// (custom optimizers, schedulers) you'd write the loop yourself — see the MNIST
+/// examples.
 pub fn train<M: Module, L: Loss>(
     model: &mut M,
     loader: &mut DataLoader,

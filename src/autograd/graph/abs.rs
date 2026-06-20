@@ -4,6 +4,8 @@ use rayon::prelude::*;
 
 const PAR_THRESHOLD: usize = 8192;
 
+/// Element-wise absolute value. Backward passes `+grad` where the input was
+/// positive, `-grad` where negative, and zero at exactly zero.
 pub fn abs(a: Rc<RefCell<Node>>) -> Rc<RefCell<Node>> {
     let input = a.borrow().data.clone();
     let data: Vec<f32> = if input.len() > PAR_THRESHOLD {

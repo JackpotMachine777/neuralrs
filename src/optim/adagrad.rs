@@ -1,6 +1,11 @@
 use crate::nn::module::Module;
 use crate::tensor::Tensor;
 
+/// Adagrad optimizer.
+///
+/// Divides each step by the square root of the accumulated sum of squared
+/// gradients, so frequently-updated weights get smaller and smaller steps over
+/// time. Good for sparse features, though the step size only ever shrinks.
 pub struct Adagrad {
     pub lr: f32,
     pub epsilon: f32,
