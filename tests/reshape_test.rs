@@ -34,10 +34,10 @@ fn reshape_gradcheck() {
     backward_graph(&out);
 
     let in_grad = input.borrow().grad.clone();
-    println!("input grad: {:?}", in_grad);
+    println!("input grad: {in_grad:?}");
 
     for i in 0..data.len() {
-        assert!((in_grad[i] - grad_inj[i]).abs() < 1e-6, "grad mismatch at {}", i);
+        assert!((in_grad[i] - grad_inj[i]).abs() < 1e-6, "grad mismatch at {i}");
     }
     println!("reshape gradcheck ok");
 }

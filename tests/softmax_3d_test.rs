@@ -15,8 +15,8 @@ fn softmax_3d_forward() {
 
     for r in 0..4 {
         let s: f32 = d[r*3..r*3+3].iter().sum();
-        println!("row {} sum: {}", r, s);
-        assert!((s - 1.0).abs() < 1e-5, "row {} doesn't sum to 1", r);
+        println!("row {r} sum: {s}");
+        assert!((s - 1.0).abs() < 1e-5, "row {r} doesn't sum to 1");
     }
 
     assert!((d[3] - 1.0/3.0).abs() < 1e-5);
@@ -65,8 +65,8 @@ fn softmax_3d_gradcheck() {
     let analytic = input.borrow().grad.clone();
     let numeric = numerical_grad(&data, &shape);
 
-    println!("analytic: {:?}", analytic);
-    println!("numeric:  {:?}", numeric);
+    println!("analytic: {analytic:?}");
+    println!("numeric:  {numeric:?}");
 
     for i in 0..data.len() {
         let diff = (analytic[i] - numeric[i]).abs();

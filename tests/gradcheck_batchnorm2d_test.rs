@@ -60,13 +60,13 @@ fn gradcheck_batchnorm2d() {
 
     let analytic = input.borrow().grad.clone();
 
-    println!("numeric:  {:?}", numeric);
-    println!("analytic: {:?}", analytic);
+    println!("numeric:  {numeric:?}");
+    println!("analytic: {analytic:?}");
 
     for i in 0..numeric.len() {
         let diff = (numeric[i] - analytic[i]).abs();
-        println!("diff[{}] = {}", i, diff);
-        assert!(diff < 2e-2, "gradient mismatch at {}", i);
+        println!("diff[{i}] = {diff}");
+        assert!(diff < 2e-2, "gradient mismatch at {i}");
     }
 }
 
@@ -99,7 +99,7 @@ fn batchnorm2d_eval_single_sample() {
     let out = bn.forward(single);
 
     let data = out.borrow().data.clone();
-    println!("eval output (N=1): {:?}", data);
+    println!("eval output (N=1): {data:?}");
     assert!(data.iter().all(|x| x.is_finite()), "non-finite values in eval!");
     assert_eq!(out.borrow().shape, vec![1, 2, 2, 2]);
 

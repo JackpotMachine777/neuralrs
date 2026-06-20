@@ -39,12 +39,12 @@ fn self_attention_forward_backward() {
     let wq: f32 = layer.w_q.grad.iter().map(|x| x.abs()).sum();
     let wk: f32 = layer.w_k.grad.iter().map(|x| x.abs()).sum();
     let wv: f32 = layer.w_v.grad.iter().map(|x| x.abs()).sum();
-    println!("w_q: {}, w_k: {}, w_v: {}", wq, wk, wv);
+    println!("w_q: {wq}, w_k: {wk}, w_v: {wv}");
 
     assert!(wv > 0.0, "W_v gradient zero!");
 
     let x_grad: f32 = x.borrow().grad.iter().map(|v| v.abs()).sum();
-    println!("x grad sum: {}", x_grad);
+    println!("x grad sum: {x_grad}");
     assert!(x_grad > 0.0, "x gradient zero - topo backward through 3 layers doesnt work!");
 
     println!("self-attention ok");

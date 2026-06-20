@@ -51,12 +51,12 @@ fn gradcheck_layernorm() {
 
     let analytic = input.borrow().grad.clone();
 
-    println!("numeric:  {:?}", numeric);
-    println!("analytic: {:?}", analytic);
+    println!("numeric:  {numeric:?}");
+    println!("analytic: {analytic:?}");
 
     for i in 0..numeric.len() {
         let diff = (numeric[i] - analytic[i]).abs();
-        println!("diff[{}] = {}", i, diff);
-        assert!(diff < 1e-2, "gradient mismatch at {}", i);
+        println!("diff[{i}] = {diff}");
+        assert!(diff < 1e-2, "gradient mismatch at {i}");
     }
 }

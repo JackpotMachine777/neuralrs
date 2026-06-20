@@ -42,8 +42,8 @@ fn adagrad_converges() {
     let mut opt = Adagrad { lr: 0.5, epsilon: 1e-8, g_sum: Vec::new(), t: 0 };
     let model: Vec<Box<dyn Module>> = vec![Box::new(make_linear(0.0))];
     let final_w = run(|m| opt.step(m), model, 200);
-    println!("adagrad final w: {} (target 3.0)", final_w);
-    assert!((final_w - 3.0).abs() < 0.1, "adagrad didn't converge: {}", final_w);
+    println!("adagrad final w: {final_w} (target 3.0)");
+    assert!((final_w - 3.0).abs() < 0.1, "adagrad didn't converge: {final_w}");
     println!("adagrad converges ok");
 }
 
@@ -52,8 +52,8 @@ fn nesterov_converges() {
     let mut opt = NesterovSGD { lr: 0.05, momentum: 0.9, velocity: Vec::new(), t: 0 };
     let model: Vec<Box<dyn Module>> = vec![Box::new(make_linear(0.0))];
     let final_w = run(|m| opt.step(m), model, 200);
-    println!("nesterov final w: {} (target 3.0)", final_w);
-    assert!((final_w - 3.0).abs() < 0.1, "nesterov didn't converge: {}", final_w);
+    println!("nesterov final w: {final_w} (target 3.0)");
+    assert!((final_w - 3.0).abs() < 0.1, "nesterov didn't converge: {final_w}");
     println!("nesterov converges ok");
 }
 
@@ -62,7 +62,7 @@ fn nadam_converges() {
     let mut opt = NAdam { lr: 0.1, beta1: 0.9, beta2: 0.999, epsilon: 1e-8, t: 0, m: Vec::new(), v: Vec::new() };
     let model: Vec<Box<dyn Module>> = vec![Box::new(make_linear(0.0))];
     let final_w = run(|m| opt.step(m), model, 200);
-    println!("nadam final w: {} (target 3.0)", final_w);
-    assert!((final_w - 3.0).abs() < 0.1, "nadam didn't converge: {}", final_w);
+    println!("nadam final w: {final_w} (target 3.0)");
+    assert!((final_w - 3.0).abs() < 0.1, "nadam didn't converge: {final_w}");
     println!("nadam converges ok");
 }

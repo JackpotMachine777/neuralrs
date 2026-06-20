@@ -71,8 +71,8 @@ fn multihead_batch_gradcheck_input() {
     let analytic = x.borrow().grad.clone();
     let numeric = numerical_grad_x(&builder, &x_data, &shape);
 
-    println!("X analytic: {:?}", analytic);
-    println!("X numeric:  {:?}", numeric);
+    println!("X analytic: {analytic:?}");
+    println!("X numeric:  {numeric:?}");
 
     for i in 0..x_data.len() {
         let diff = (analytic[i] - numeric[i]).abs();

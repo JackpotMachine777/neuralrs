@@ -11,7 +11,7 @@ fn positional_encoding_values() {
     let out = pe.forward(x.clone());
 
     let data = out.borrow().data.clone();
-    println!("PE output: {:?}", data);
+    println!("PE output: {data:?}");
     assert_eq!(out.borrow().shape, vec![3, d_model]);
 
     assert!((data[0] - 0.0).abs() < 1e-5, "pos0 dim0 should be sin(0)=0");

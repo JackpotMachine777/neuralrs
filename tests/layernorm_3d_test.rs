@@ -29,8 +29,8 @@ fn layernorm_3d_forward() {
 
     for r in 0..4 {
         let m: f32 = d[r*3..r*3+3].iter().sum::<f32>() / 3.0;
-        println!("token {} mean: {}", r, m);
-        assert!(m.abs() < 1e-4, "token {} not zero-mean", r);
+        println!("token {r} mean: {m}");
+        assert!(m.abs() < 1e-4, "token {r} not zero-mean");
     }
     println!("layernorm 3d forward ok");
 }
@@ -75,8 +75,8 @@ fn layernorm_3d_gradcheck() {
     let mut ln_n = make_ln(3);
     let numeric = numerical_grad(&mut ln_n, &data, &shape);
 
-    println!("analytic: {:?}", analytic);
-    println!("numeric:  {:?}", numeric);
+    println!("analytic: {analytic:?}");
+    println!("numeric:  {numeric:?}");
 
     for i in 0..data.len() {
         let diff = (analytic[i] - numeric[i]).abs();

@@ -13,13 +13,13 @@ fn transpose_3d_forward() {
     assert_eq!(out.borrow().shape, vec![2, 3, 2]);
     let d = out.borrow().data.clone();
 
-    let expected_b0 = vec![1.0, 4.0, 2.0, 5.0, 3.0, 6.0];
-    let expected_b1 = vec![7.0, 10.0, 8.0, 11.0, 9.0, 12.0];
+    let expected_b0 = [1.0, 4.0, 2.0, 5.0, 3.0, 6.0];
+    let expected_b1 = [7.0, 10.0, 8.0, 11.0, 9.0, 12.0];
 
-    println!("output: {:?}", d);
+    println!("output: {d:?}");
     for i in 0..6 {
-        assert!((d[i] - expected_b0[i]).abs() < 1e-6, "batch 0 mismatch at {}", i);
-        assert!((d[6 + i] - expected_b1[i]).abs() < 1e-6, "batch 1 mismatch at {}", i);
+        assert!((d[i] - expected_b0[i]).abs() < 1e-6, "batch 0 mismatch at {i}");
+        assert!((d[6 + i] - expected_b1[i]).abs() < 1e-6, "batch 1 mismatch at {i}");
     }
 
     println!("transpose 3d forward ok");
@@ -39,7 +39,7 @@ fn transpose_3d_backward() {
     backward_graph(&out);
 
     let in_grad = input.borrow().grad.clone();
-    println!("input grad: {:?}", in_grad);
+    println!("input grad: {in_grad:?}");
 
     let rows = 2; let cols = 3;
     for b in 0..2 {
@@ -48,7 +48,7 @@ fn transpose_3d_backward() {
                 let in_idx = b * rows * cols + i * cols + j;
                 let out_idx = b * rows * cols + j * rows + i;
                 assert!((in_grad[in_idx] - grad_inj[out_idx]).abs() < 1e-6,
-                    "grad mismatch b{} i{} j{}", b, i, j);
+                    "grad mismatch b{b} i{i} j{j}");
             }
         }
     }

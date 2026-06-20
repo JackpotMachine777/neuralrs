@@ -67,10 +67,10 @@ fn gradcheck_bmm() {
     let a_numeric = numerical_grad_a(&a_data, &a_shape, &b_data, &b_shape);
     let b_numeric = numerical_grad_b(&a_data, &a_shape, &b_data, &b_shape);
 
-    println!("A analytic: {:?}", a_analytic);
-    println!("A numeric:  {:?}", a_numeric);
-    println!("B analytic: {:?}", b_analytic);
-    println!("B numeric:  {:?}", b_numeric);
+    println!("A analytic: {a_analytic:?}");
+    println!("A numeric:  {a_numeric:?}");
+    println!("B analytic: {b_analytic:?}");
+    println!("B numeric:  {b_numeric:?}");
 
     for i in 0..a_data.len() {
         let diff = (a_analytic[i] - a_numeric[i]).abs();
@@ -91,7 +91,7 @@ fn bmm_forward_correct() {
     let out = bmm(a, b);
 
     let data = out.borrow().data.clone();
-    println!("forward: {:?}", data);
+    println!("forward: {data:?}");
     assert_eq!(out.borrow().shape, vec![1, 2, 2]);
     assert!((data[0] - 19.0).abs() < 1e-4);
     assert!((data[1] - 22.0).abs() < 1e-4);

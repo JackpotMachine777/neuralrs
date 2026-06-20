@@ -49,6 +49,6 @@ fn prototype_model_test(){
         model.sync_grads();
         adamw.step(&mut model.list);
 
-        println!("Epoch {}: loss = {}", epoch, loss);
+        println!("Epoch {epoch}: loss = {loss}");
     }
 }

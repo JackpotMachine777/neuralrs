@@ -77,7 +77,7 @@ fn main() {
     let train_labels = read_labels("data/mnist/train-labels-idx1-ubyte");
     let (test_images, _, _, _) = read_images("data/mnist/t10k-images-idx3-ubyte");
     let test_raw = read_labels_raw("data/mnist/t10k-labels-idx1-ubyte");
-    println!("Loaded {} training images", n_train);
+    println!("Loaded {n_train} training images");
 
     let batch_size = 32;
     let mut loader = DataLoader::new(train_images, train_labels, batch_size);

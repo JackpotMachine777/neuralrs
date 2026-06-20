@@ -10,8 +10,8 @@ fn im2col_basic_test() {
 
     let (col, col_h, col_w) = im2col(&data, 1, 1, 3, 3, 2, 2, 1, 0);
 
-    println!("col_h={}, col_w={}", col_h, col_w);
-    println!("col: {:?}", col);
+    println!("col_h={col_h}, col_w={col_w}");
+    println!("col: {col:?}");
 
     assert_eq!(col_h, 4);
     assert_eq!(col_w, 4);

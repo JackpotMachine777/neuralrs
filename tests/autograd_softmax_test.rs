@@ -12,7 +12,7 @@ fn autograd_softmax_test() {
     println!("output: {:?}", c.borrow().data);
     
     let sum: f32 = c.borrow().data.iter().sum();
-    println!("sum: {}", sum);
+    println!("sum: {sum}");
     assert!((sum - 1.0).abs() < 1e-5);
 
     engine::backward(c.clone());

@@ -1,4 +1,5 @@
 use crate::nn::module::Module;
+use crate::tensor::Tensor;
 
 pub struct SGD{
     pub lr: f32,
@@ -7,24 +8,25 @@ pub struct SGD{
 }
 
 impl SGD{
-    pub fn step(&mut self, w: &mut Vec<Box<dyn Module>>){
+    pub fn step_params(&mut self, params: &mut Vec<&mut Tensor>) {
         let mut idx = 0;
-
-        for i in 0..w.len(){
-            let mut item = w[i].parameters();
-
-            for j in 0..item.len(){
-                for k in 0..item[j].storage.data.len(){
-                    if self.velocity.len() <= idx{
-                        self.velocity.push(0.0);
-                    }
-
-                    self.velocity[idx] = self.momentum * self.velocity[idx]  + item[j].grad[k];
-                    item[j].storage.data[k] = item[j].storage.data[k] - self.lr * self.velocity[idx];
-
-                    idx += 1;
+        for j in 0..params.len() {
+            for k in 0..params[j].storage.data.len() {
+                if self.velocity.len() <= idx {
+                    self.velocity.push(0.0);
                 }
+                self.velocity[idx] = self.momentum * self.velocity[idx] + params[j].grad[k];
+                params[j].storage.data[k] -= self.lr * self.velocity[idx];
+                idx += 1;
             }
         }
+    }
+
+    pub fn step(&mut self, w: &mut Vec<Box<dyn Module>>){
+        let mut params: Vec<&mut Tensor> = Vec::new();
+        for module in w.iter_mut() {
+            params.extend(module.parameters());
+        }
+        self.step_params(&mut params);
     }
 }

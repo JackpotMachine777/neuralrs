@@ -42,8 +42,8 @@ fn save_load_model_roundtrip() {
     let out_b_before = model_b.forward(Node::new(input_data.clone(), vec![1, 2]));
     let pred_b_before = out_b_before.borrow().data.clone();
 
-    println!("A: {:?}", pred_a);
-    println!("B before load: {:?}", pred_b_before);
+    println!("A: {pred_a:?}");
+    println!("B before load: {pred_b_before:?}");
     assert_ne!(pred_a, pred_b_before, "modele should differ before load");
 
     load_model(&mut model_b, path);
@@ -51,7 +51,7 @@ fn save_load_model_roundtrip() {
     let out_b_after = model_b.forward(Node::new(input_data.clone(), vec![1, 2]));
     let pred_b_after = out_b_after.borrow().data.clone();
 
-    println!("B after load: {:?}", pred_b_after);
+    println!("B after load: {pred_b_after:?}");
     assert_eq!(pred_a, pred_b_after, "after load B has to = A");
 
     println!("save/load model roundtrip ok");

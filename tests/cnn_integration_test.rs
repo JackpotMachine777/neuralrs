@@ -84,6 +84,6 @@ fn cnn_end_to_end() {
             fc.bias.storage.data[i] -= lr * fc.bias.grad[i];
         }
 
-        println!("Epoch {}: loss = {}", epoch, loss);
+        println!("Epoch {epoch}: loss = {loss}");
     }
 }

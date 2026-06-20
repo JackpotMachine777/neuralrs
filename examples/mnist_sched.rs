@@ -78,7 +78,7 @@ fn main() {
     let train_labels = read_labels("data/mnist/train-labels-idx1-ubyte");
     let (test_images, _, _, _) = read_images("data/mnist/t10k-images-idx3-ubyte");
     let test_raw = read_labels_raw("data/mnist/t10k-labels-idx1-ubyte");
-    println!("Loaded {} training images", n_train);
+    println!("Loaded {n_train} training images");
 
     let batch_size = 32;
     let mut loader = DataLoader::new(train_images, train_labels, batch_size);
@@ -136,7 +136,7 @@ fn main() {
         t_max: epochs,
     };
 
-    println!("Starting training (small model + AdamW + WarmupCosine, batch={}, epochs={})", batch_size, epochs);
+    println!("Starting training (small model + AdamW + WarmupCosine, batch={batch_size}, epochs={epochs})");
 
     for epoch in 0..epochs {
         let lr = scheduler.get_lr(epoch);

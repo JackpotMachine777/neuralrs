@@ -38,8 +38,8 @@ fn gradcheck_gelu() {
     output.borrow_mut().backward();
     let analytic = input.borrow().grad.clone();
 
-    println!("numeric:  {:?}", numeric);
-    println!("analytic: {:?}", analytic);
+    println!("numeric:  {numeric:?}");
+    println!("analytic: {analytic:?}");
 
     for i in 0..numeric.len() {
         let diff = (numeric[i] - analytic[i]).abs();

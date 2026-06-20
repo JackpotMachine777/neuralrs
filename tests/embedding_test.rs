@@ -47,7 +47,7 @@ fn embedding_gradient_to_used_rows() {
 
     emb.sync_grads();
     let g = &emb.weight.grad;
-    println!("weight grad: {:?}", g);
+    println!("weight grad: {g:?}");
 
     assert_eq!(&g[0..3], &[0.0, 0.0, 0.0]);
     assert_eq!(&g[3..6], &[2.0, 2.0, 2.0]);

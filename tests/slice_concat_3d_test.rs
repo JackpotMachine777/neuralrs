@@ -10,11 +10,11 @@ fn slice_cols_3d() {
 
     assert_eq!(out.borrow().shape, vec![2, 2, 2]);
     let d = out.borrow().data.clone();
-    println!("sliced: {:?}", d);
+    println!("sliced: {d:?}");
 
-    let expected = vec![1.0, 2.0, 5.0, 6.0, 9.0, 10.0, 13.0, 14.0];
+    let expected = [1.0, 2.0, 5.0, 6.0, 9.0, 10.0, 13.0, 14.0];
     for i in 0..8 {
-        assert!((d[i] - expected[i]).abs() < 1e-6, "mismatch at {}", i);
+        assert!((d[i] - expected[i]).abs() < 1e-6, "mismatch at {i}");
     }
     println!("slice_cols 3d ok");
 }
@@ -27,11 +27,11 @@ fn concat_cols_3d() {
 
     assert_eq!(out.borrow().shape, vec![2, 2, 4]);
     let d = out.borrow().data.clone();
-    println!("concat: {:?}", d);
+    println!("concat: {d:?}");
 
-    let expected = vec![1.0, 2.0, 10.0, 20.0, 3.0, 4.0, 30.0, 40.0, 5.0, 6.0, 50.0, 60.0, 7.0, 8.0, 70.0, 80.0];
+    let expected = [1.0, 2.0, 10.0, 20.0, 3.0, 4.0, 30.0, 40.0, 5.0, 6.0, 50.0, 60.0, 7.0, 8.0, 70.0, 80.0];
     for i in 0..16 {
-        assert!((d[i] - expected[i]).abs() < 1e-6, "mismatch at {}", i);
+        assert!((d[i] - expected[i]).abs() < 1e-6, "mismatch at {i}");
     }
     println!("concat_cols 3d ok");
 }
@@ -50,10 +50,10 @@ fn slice_concat_3d_roundtrip_grad() {
     backward_graph(&recon);
 
     let in_grad = input.borrow().grad.clone();
-    println!("input grad: {:?}", in_grad);
+    println!("input grad: {in_grad:?}");
 
     for i in 0..16 {
-        assert!((in_grad[i] - grad_inj[i]).abs() < 1e-6, "grad mismatch at {}", i);
+        assert!((in_grad[i] - grad_inj[i]).abs() < 1e-6, "grad mismatch at {i}");
     }
     println!("slice/concat 3d roundtrip grad ok");
 }

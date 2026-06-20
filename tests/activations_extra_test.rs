@@ -31,10 +31,10 @@ fn gradcheck_leaky_relu() {
         x.iter().map(|&v| if v > 0.0 { v } else { alpha * v }).collect()
     });
 
-    println!("leaky analytic: {:?}", analytic);
-    println!("leaky numeric:  {:?}", numeric);
+    println!("leaky analytic: {analytic:?}");
+    println!("leaky numeric:  {numeric:?}");
     for i in 0..4 {
-        assert!((analytic[i] - numeric[i]).abs() < 1e-2, "leaky mismatch at {}", i);
+        assert!((analytic[i] - numeric[i]).abs() < 1e-2, "leaky mismatch at {i}");
     }
     println!("leaky_relu ok");
 }
@@ -53,10 +53,10 @@ fn gradcheck_elu() {
         x.iter().map(|&v| if v > 0.0 { v } else { alpha * (v.exp() - 1.0) }).collect()
     });
 
-    println!("elu analytic: {:?}", analytic);
-    println!("elu numeric:  {:?}", numeric);
+    println!("elu analytic: {analytic:?}");
+    println!("elu numeric:  {numeric:?}");
     for i in 0..4 {
-        assert!((analytic[i] - numeric[i]).abs() < 1e-2, "elu mismatch at {}", i);
+        assert!((analytic[i] - numeric[i]).abs() < 1e-2, "elu mismatch at {i}");
     }
     println!("elu ok");
 }
@@ -75,10 +75,10 @@ fn gradcheck_silu() {
         x.iter().map(|&v| v * sig(v)).collect()
     });
 
-    println!("silu analytic: {:?}", analytic);
-    println!("silu numeric:  {:?}", numeric);
+    println!("silu analytic: {analytic:?}");
+    println!("silu numeric:  {numeric:?}");
     for i in 0..4 {
-        assert!((analytic[i] - numeric[i]).abs() < 1e-2, "silu mismatch at {}", i);
+        assert!((analytic[i] - numeric[i]).abs() < 1e-2, "silu mismatch at {i}");
     }
     println!("silu ok");
 }

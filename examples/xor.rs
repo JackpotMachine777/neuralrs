@@ -1,3 +1,7 @@
+// Minimal training example: a tiny 2-2-2 MLP trained with SGD on a single
+// input/target pair. The smallest end-to-end loop in RsTorch — useful as a
+// sanity check that forward, backward, and the optimizer all work together.
+
 use rstorch::tensor::Tensor;
 use rstorch::nn::module::Module;
 use rstorch::nn::linear::Linear;

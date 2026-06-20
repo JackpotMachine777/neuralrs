@@ -42,7 +42,7 @@ fn im2col_matches_conv() {
     let out_conv_data = out_conv.borrow().data.clone();
 
     println!("im2col len: {}, conv len: {}", out_im2col.len(), out_conv_data.len());
-    println!("out_h={}, out_w={}", oh, ow);
+    println!("out_h={oh}, out_w={ow}");
 
     assert_eq!(out_im2col.len(), out_conv_data.len());
 

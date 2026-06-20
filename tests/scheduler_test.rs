@@ -32,7 +32,7 @@ fn cosine_annealing() {
     assert!((s.get_lr(10) - 0.0).abs() < 1e-5);
     assert!((s.get_lr(5) - 0.5).abs() < 1e-5);
     for step in 0..10 {
-        assert!(s.get_lr(step) >= s.get_lr(step + 1), "not decreasing at {}", step);
+        assert!(s.get_lr(step) >= s.get_lr(step + 1), "not decreasing at {step}");
     }
     println!("cosine_annealing ok");
 }
@@ -47,11 +47,11 @@ fn warmup_cosine() {
     assert!((s.get_lr(15) - 0.0).abs() < 1e-4);
 
     for step in 0..4 {
-        assert!(s.get_lr(step) < s.get_lr(step + 1), "warmup not increasing at {}", step);
+        assert!(s.get_lr(step) < s.get_lr(step + 1), "warmup not increasing at {step}");
     }
 
     for step in 5..15 {
-        assert!(s.get_lr(step) >= s.get_lr(step + 1), "cosine not decreasing at {}", step);
+        assert!(s.get_lr(step) >= s.get_lr(step + 1), "cosine not decreasing at {step}");
     }
 
     println!("warmup_cosine ok");

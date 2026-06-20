@@ -25,8 +25,8 @@ fn layernorm_test(){
     let row1_mean: f32 = output.borrow().data[0..2].iter().sum::<f32>() / 2.0;
     let row2_mean: f32 = output.borrow().data[2..4].iter().sum::<f32>() / 2.0;
 
-    println!("row1 mean: {}", row1_mean);
-    println!("row2 mean: {}", row2_mean);
+    println!("row1 mean: {row1_mean}");
+    println!("row2 mean: {row2_mean}");
 
     assert!(row1_mean.abs() < 1e-5);
     assert!(row2_mean.abs() < 1e-5);

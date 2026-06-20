@@ -49,7 +49,7 @@ fn embedding_batch_gradient_sums_across_batch() {
 
     emb.sync_grads();
     let g = &emb.weight.grad;
-    println!("weight grad: {:?}", g);
+    println!("weight grad: {g:?}");
 
     assert_eq!(&g[0..3], &[1.0, 1.0, 1.0]);
     assert_eq!(&g[3..6], &[1.0, 1.0, 1.0]);

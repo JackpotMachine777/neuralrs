@@ -42,13 +42,13 @@ fn multihead_forward_backward() {
     let wk: f32 = mha.w_k.grad.iter().map(|v| v.abs()).sum();
     let wv: f32 = mha.w_v.grad.iter().map(|v| v.abs()).sum();
     let wo: f32 = mha.w_o.grad.iter().map(|v| v.abs()).sum();
-    println!("w_q: {}, w_k: {}, w_v: {}, w_o: {}", wq, wk, wv, wo);
+    println!("w_q: {wq}, w_k: {wk}, w_v: {wv}, w_o: {wo}");
 
     assert!(wo > 0.0, "W_o gradient zero!");
     assert!(wv > 0.0, "W_v gradient zero!");
 
     let x_grad: f32 = x.borrow().grad.iter().map(|v| v.abs()).sum();
-    println!("x grad sum: {}", x_grad);
+    println!("x grad sum: {x_grad}");
     assert!(x_grad > 0.0, "x gradient zero - backward doesnt work!");
 
     println!("multi-head attention ok");

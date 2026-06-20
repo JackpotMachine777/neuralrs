@@ -94,8 +94,8 @@ fn transformer_block_gradcheck_input() {
         let grad_inj: Vec<f32> = (0..out.borrow().data.len()).map(|j| j as f32 + 1.0).collect();
         out.borrow_mut().grad = grad_inj;
         backward_graph(&out);
-        let g = x.borrow().grad.clone();
-        g
+        
+        x.borrow().grad.clone()
     };
 
     let mut numeric = vec![0.0; x_data.len()];
@@ -103,8 +103,8 @@ fn transformer_block_gradcheck_input() {
         numeric[i] = numeric_grad_at(&x_data, &shape, i);
     }
 
-    println!("X analytic: {:?}", analytic);
-    println!("X numeric:  {:?}", numeric);
+    println!("X analytic: {analytic:?}");
+    println!("X numeric:  {numeric:?}");
 
     for i in 0..x_data.len() {
         let diff = (analytic[i] - numeric[i]).abs();

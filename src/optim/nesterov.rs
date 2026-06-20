@@ -1,4 +1,5 @@
 use crate::nn::module::Module;
+use crate::tensor::Tensor;
 
 pub struct NesterovSGD {
     pub lr: f32,
@@ -8,24 +9,29 @@ pub struct NesterovSGD {
 }
 
 impl NesterovSGD {
-    pub fn step(&mut self, w: &mut Vec<Box<dyn Module>>) {
+    pub fn step_params(&mut self, params: &mut Vec<&mut Tensor>) {
         let mut idx = 0;
-        for i in 0..w.len() {
-            let mut item = w[i].parameters();
-            for j in 0..item.len() {
-                for k in 0..item[j].storage.data.len() {
-                    if self.t == 0 {
-                        self.velocity.push(0.0);
-                    }
-                    let g = item[j].grad[k];
-                    let v_prev = self.velocity[idx];
-                    self.velocity[idx] = self.momentum * v_prev + g;
-                    let update = self.momentum * self.velocity[idx] + g;
-                    item[j].storage.data[k] -= self.lr * update;
-                    idx += 1;
+        for j in 0..params.len() {
+            for k in 0..params[j].storage.data.len() {
+                if self.t == 0 {
+                    self.velocity.push(0.0);
                 }
+                let g = params[j].grad[k];
+                let v_prev = self.velocity[idx];
+                self.velocity[idx] = self.momentum * v_prev + g;
+                let update = self.momentum * self.velocity[idx] + g;
+                params[j].storage.data[k] -= self.lr * update;
+                idx += 1;
             }
         }
         self.t += 1;
+    }
+
+    pub fn step(&mut self, w: &mut Vec<Box<dyn Module>>) {
+        let mut params: Vec<&mut Tensor> = Vec::new();
+        for module in w.iter_mut() {
+            params.extend(module.parameters());
+        }
+        self.step_params(&mut params);
     }
 }

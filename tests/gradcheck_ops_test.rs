@@ -42,10 +42,10 @@ fn gradcheck_div() {
         ain.iter().zip(bd.iter()).map(|(x, y)| x / y).collect()
     });
 
-    println!("div analytic da: {:?}", ga);
-    println!("div numeric  da: {:?}", num_a);
+    println!("div analytic da: {ga:?}");
+    println!("div numeric  da: {num_a:?}");
     for i in 0..3 {
-        assert!((ga[i] - num_a[i]).abs() < 1e-2, "div da mismatch at {}", i);
+        assert!((ga[i] - num_a[i]).abs() < 1e-2, "div da mismatch at {i}");
     }
     println!("div ok");
 }
@@ -60,10 +60,10 @@ fn gradcheck_exp() {
 
     let num = num_grad_unary(&a_data, |ain| ain.iter().map(|x| x.exp()).collect());
 
-    println!("exp analytic: {:?}", ga);
-    println!("exp numeric:  {:?}", num);
+    println!("exp analytic: {ga:?}");
+    println!("exp numeric:  {num:?}");
     for i in 0..3 {
-        assert!((ga[i] - num[i]).abs() < 1e-2, "exp mismatch at {}", i);
+        assert!((ga[i] - num[i]).abs() < 1e-2, "exp mismatch at {i}");
     }
     println!("exp ok");
 }
@@ -79,10 +79,10 @@ fn gradcheck_pow() {
 
     let num = num_grad_unary(&a_data, |ain| ain.iter().map(|x| x.powf(p)).collect());
 
-    println!("pow analytic: {:?}", ga);
-    println!("pow numeric:  {:?}", num);
+    println!("pow analytic: {ga:?}");
+    println!("pow numeric:  {num:?}");
     for i in 0..3 {
-        assert!((ga[i] - num[i]).abs() < 1e-2, "pow mismatch at {}", i);
+        assert!((ga[i] - num[i]).abs() < 1e-2, "pow mismatch at {i}");
     }
     println!("pow ok");
 }
@@ -98,10 +98,10 @@ fn gradcheck_log() {
 
     let num = num_grad_unary(&a_data, |ain| ain.iter().map(|x| x.ln()).collect());
 
-    println!("log analytic: {:?}", ga);
-    println!("log numeric:  {:?}", num);
+    println!("log analytic: {ga:?}");
+    println!("log numeric:  {num:?}");
     for i in 0..3 {
-        assert!((ga[i] - num[i]).abs() < 1e-2, "log mismatch at {}", i);
+        assert!((ga[i] - num[i]).abs() < 1e-2, "log mismatch at {i}");
     }
     println!("log ok");
 }
@@ -117,10 +117,10 @@ fn gradcheck_sqrt() {
 
     let num = num_grad_unary(&a_data, |ain| ain.iter().map(|x| x.sqrt()).collect());
 
-    println!("sqrt analytic: {:?}", ga);
-    println!("sqrt numeric:  {:?}", num);
+    println!("sqrt analytic: {ga:?}");
+    println!("sqrt numeric:  {num:?}");
     for i in 0..3 {
-        assert!((ga[i] - num[i]).abs() < 1e-2, "sqrt mismatch at {}", i);
+        assert!((ga[i] - num[i]).abs() < 1e-2, "sqrt mismatch at {i}");
     }
     println!("sqrt ok");
 }
@@ -136,10 +136,10 @@ fn gradcheck_abs() {
 
     let num = num_grad_unary(&a_data, |ain| ain.iter().map(|x| x.abs()).collect());
 
-    println!("abs analytic: {:?}", ga);
-    println!("abs numeric:  {:?}", num);
+    println!("abs analytic: {ga:?}");
+    println!("abs numeric:  {num:?}");
     for i in 0..3 {
-        assert!((ga[i] - num[i]).abs() < 1e-2, "abs mismatch at {}", i);
+        assert!((ga[i] - num[i]).abs() < 1e-2, "abs mismatch at {i}");
     }
     println!("abs ok");
 }

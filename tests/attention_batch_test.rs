@@ -71,12 +71,12 @@ fn attention_batch_gradcheck() {
     let k_numeric = numerical_grad('k', &q, &k, &v, &shape);
     let v_numeric = numerical_grad('v', &q, &k, &v, &shape);
 
-    println!("Q analytic: {:?}", q_analytic);
-    println!("Q numeric:  {:?}", q_numeric);
-    println!("K analytic: {:?}", k_analytic);
-    println!("K numeric:  {:?}", k_numeric);
-    println!("V analytic: {:?}", v_analytic);
-    println!("V numeric:  {:?}", v_numeric);
+    println!("Q analytic: {q_analytic:?}");
+    println!("Q numeric:  {q_numeric:?}");
+    println!("K analytic: {k_analytic:?}");
+    println!("K numeric:  {k_numeric:?}");
+    println!("V analytic: {v_analytic:?}");
+    println!("V numeric:  {v_numeric:?}");
 
     for i in 0..q.len() {
         assert!((q_analytic[i] - q_numeric[i]).abs() < 2e-2, "Q mismatch at {}: {} vs {}", i, q_analytic[i], q_numeric[i]);

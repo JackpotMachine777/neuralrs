@@ -52,7 +52,7 @@ fn lstm_sequence_bptt() {
     let uo_sum: f32 = cell.u_o.grad.iter().map(|x| x.abs()).sum();
     let ug_sum: f32 = cell.u_g.grad.iter().map(|x| x.abs()).sum();
 
-    println!("u_f: {}, u_i: {}, u_o: {}, u_g: {}", uf_sum, ui_sum, uo_sum, ug_sum);
+    println!("u_f: {uf_sum}, u_i: {ui_sum}, u_o: {uo_sum}, u_g: {ug_sum}");
 
     assert!(uf_sum > 0.0, "forget gate recurrent grad zero!");
     assert!(ui_sum > 0.0, "input gate recurrent grad zero!");

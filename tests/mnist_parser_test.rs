@@ -4,7 +4,7 @@ use rstorch::data::mnist::{read_images, read_labels, read_labels_raw};
 fn mnist_loads_correctly() {
     let (images, count, rows, cols) = read_images("data/mnist/t10k-images-idx3-ubyte");
 
-    println!("count: {}, rows: {}, cols: {}", count, rows, cols);
+    println!("count: {count}, rows: {rows}, cols: {cols}");
     assert_eq!(count, 10000);
     assert_eq!(rows, 28);
     assert_eq!(cols, 28);
@@ -13,7 +13,7 @@ fn mnist_loads_correctly() {
 
     let max_pixel = images[0].iter().cloned().fold(0.0f32, f32::max);
     let min_pixel = images[0].iter().cloned().fold(1.0f32, f32::min);
-    println!("first image pixel range: {} to {}", min_pixel, max_pixel);
+    println!("first image pixel range: {min_pixel} to {max_pixel}");
     assert!(max_pixel <= 1.0);
     assert!(min_pixel >= 0.0);
     assert!(max_pixel > 0.0);

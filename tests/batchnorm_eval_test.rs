@@ -48,7 +48,7 @@ fn batchnorm_eval_single_sample() {
     let out = bn.forward(single);
 
     let data = out.borrow().data.clone();
-    println!("eval output (batch=1): {:?}", data);
+    println!("eval output (batch=1): {data:?}");
 
     assert!(data.iter().all(|x| x.is_finite()), "eval on batch=1 produced non-finite values!");
     assert_eq!(out.borrow().shape, vec![1, 2]);

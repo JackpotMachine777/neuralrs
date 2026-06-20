@@ -27,6 +27,6 @@ fn batchnorm_test(){
     assert_eq!(output.borrow().shape, vec![2, 2]);
 
     let mean: f32 = output.borrow().data.iter().sum::<f32>() / output.borrow().data.len() as f32;
-    println!("mean: {}", mean);
+    println!("mean: {mean}");
     assert!(mean.abs() < 1e-5);
 }

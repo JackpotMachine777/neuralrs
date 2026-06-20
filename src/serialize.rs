@@ -15,12 +15,12 @@ pub fn save_linear(layer: &Linear, path: &str) {
 
     writeln!(file, "weights").unwrap();
     for v in &w.storage.data {
-        writeln!(file, "{}", v).unwrap();
+        writeln!(file, "{v}").unwrap();
     }
 
     writeln!(file, "bias").unwrap();
     for v in &b.storage.data {
-        writeln!(file, "{}", v).unwrap();
+        writeln!(file, "{v}").unwrap();
     }
 }
 
@@ -37,8 +37,7 @@ pub fn load_linear(path: &str) -> Linear {
     let w_cols = ws[1];
 
     let bs_line = lines.next().unwrap();
-    let bs: usize = bs_line.split_whitespace().skip(1)
-        .next().unwrap().parse().unwrap();
+    let bs: usize = bs_line.split_whitespace().nth(1).unwrap().parse().unwrap();
 
     let _weights_header = lines.next().unwrap();
     let mut w_data = Vec::with_capacity(w_rows * w_cols);
@@ -72,7 +71,7 @@ pub fn save_model<M: Module>(model: &mut M, path: &str) {
         writeln!(file, "len {}", p.storage.data.len()).unwrap();
 
         for v in &p.storage.data {
-            writeln!(file, "{}", v).unwrap();
+            writeln!(file, "{v}").unwrap();
         }
     }
 }
@@ -83,14 +82,14 @@ pub fn load_model<M: Module>(model: &mut M, path: &str) {
     let mut lines = reader.lines().map(|l| l.unwrap());
 
     let header = lines.next().unwrap();
-    let n_tensors: usize = header.split_whitespace().skip(1).next().unwrap().parse().unwrap();
+    let n_tensors: usize = header.split_whitespace().nth(1).unwrap().parse().unwrap();
 
     let mut params = model.parameters();
     assert_eq!(params.len(), n_tensors, "tensors count in file != model parameters count");
 
     for p in params.iter_mut() {
         let len_line = lines.next().unwrap();
-        let len: usize = len_line.split_whitespace().skip(1).next().unwrap().parse().unwrap();
+        let len: usize = len_line.split_whitespace().nth(1).unwrap().parse().unwrap();
         assert_eq!(len, p.storage.data.len(), "tensor size in file != size in model");
         
         for i in 0..len {

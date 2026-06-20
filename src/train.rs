@@ -49,7 +49,7 @@ pub fn train<M: Module, L: Loss>(
 
         let avg = epoch_loss / nb as f32;
         history.push(avg);
-        println!("Epoch {}: avg loss = {}", epoch, avg);
+        println!("Epoch {epoch}: avg loss = {avg}");
     }
 
     history

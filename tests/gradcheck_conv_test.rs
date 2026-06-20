@@ -68,8 +68,8 @@ fn gradcheck_conv_input() {
     output.borrow_mut().backward();
     let analytic = input.borrow().grad.clone();
 
-    println!("numeric:  {:?}", numeric);
-    println!("analytic: {:?}", analytic);
+    println!("numeric:  {numeric:?}");
+    println!("analytic: {analytic:?}");
 
     for i in 0..numeric.len() {
         let diff = (numeric[i] - analytic[i]).abs();
@@ -114,8 +114,8 @@ fn gradcheck_conv_weight() {
     layer.sync_grads();
     let analytic = layer.weight.grad.clone();
 
-    println!("weight numeric:  {:?}", numeric);
-    println!("weight analytic: {:?}", analytic);
+    println!("weight numeric:  {numeric:?}");
+    println!("weight analytic: {analytic:?}");
 
     for i in 0..numeric.len() {
         let diff = (numeric[i] - analytic[i]).abs();
@@ -157,8 +157,8 @@ fn gradcheck_conv_bias() {
     layer.sync_grads();
     let analytic = layer.bias.grad.clone();
 
-    println!("bias numeric:  {:?}", numeric);
-    println!("bias analytic: {:?}", analytic);
+    println!("bias numeric:  {numeric:?}");
+    println!("bias analytic: {analytic:?}");
 
     let diff = (numeric[0] - analytic[0]).abs();
     assert!(diff < 1e-2, "bias grad mismatch: {} vs {}", numeric[0], analytic[0]);
@@ -212,12 +212,12 @@ fn gradcheck_conv_padding() {
     output.borrow_mut().backward();
     let analytic = input.borrow().grad.clone();
 
-    println!("pad numeric:  {:?}", numeric);
-    println!("pad analytic: {:?}", analytic);
+    println!("pad numeric:  {numeric:?}");
+    println!("pad analytic: {analytic:?}");
 
     for i in 0..numeric.len() {
         let diff = (numeric[i] - analytic[i]).abs();
-        assert!(diff < 5e-2, "padded input grad mismatch at {}", i);
+        assert!(diff < 5e-2, "padded input grad mismatch at {i}");
     }
     println!("conv padding gradcheck ok");
 }

@@ -42,8 +42,8 @@ fn train_mlp_sum() {
 
     let first = history[0];
     let last = history[history.len() - 1];
-    println!("first epoch loss: {}, last epoch loss: {}", first, last);
+    println!("first epoch loss: {first}, last epoch loss: {last}");
 
-    assert!(last < first * 0.3, "loss didnt drop enough: {} -> {}", first, last);
+    assert!(last < first * 0.3, "loss didnt drop enough: {first} -> {last}");
     println!("train mlp sum ok");
 }

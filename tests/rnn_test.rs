@@ -42,11 +42,11 @@ fn rnn_sequence_forward_backward() {
     cell.sync_grads();
 
     let w_hh_grad_sum: f32 = cell.w_hh.grad.iter().map(|x| x.abs()).sum();
-    println!("w_hh grad sum: {}", w_hh_grad_sum);
+    println!("w_hh grad sum: {w_hh_grad_sum}");
     assert!(w_hh_grad_sum > 0.0, "w_hh gradient zero - BPTT doesnt work!");
 
     let w_xh_grad_sum: f32 = cell.w_xh.grad.iter().map(|x| x.abs()).sum();
-    println!("w_xh grad sum: {}", w_xh_grad_sum);
+    println!("w_xh grad sum: {w_xh_grad_sum}");
     assert!(w_xh_grad_sum > 0.0, "w_xh gradient zero!");
 
     println!("rnn BPTT ok");

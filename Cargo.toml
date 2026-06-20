@@ -15,6 +15,15 @@ matrixmultiply = { version = "0.3", optional = true }
 [features]
 blas = ["matrixmultiply"]
 
+[lints.clippy]
+needless_range_loop = "allow"
+too_many_arguments = "allow"
+ptr_arg = "allow"
+type_complexity = "allow"
+excessive_precision = "allow"
+manual_div_ceil = "allow"
+len_without_is_empty = "allow"
+
 [[bench]]
 name = "matmul_bench"
 harness = false
