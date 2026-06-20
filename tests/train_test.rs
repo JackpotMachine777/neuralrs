@@ -1,11 +1,11 @@
-use rstorch::tensor::Tensor;
-use rstorch::nn::sequential::Sequential;
-use rstorch::nn::linear::Linear;
-use rstorch::nn::activations::relu::ReLU;
-use rstorch::nn::loss::MSELoss;
-use rstorch::data::dataloader::DataLoader;
-use rstorch::train::train;
-use rstorch::init::he;
+use neuralrs::tensor::Tensor;
+use neuralrs::nn::sequential::Sequential;
+use neuralrs::nn::linear::Linear;
+use neuralrs::nn::activations::relu::ReLU;
+use neuralrs::nn::loss::MSELoss;
+use neuralrs::data::dataloader::DataLoader;
+use neuralrs::train::train;
+use neuralrs::init::he;
 
 #[test]
 fn train_mlp_sum() {

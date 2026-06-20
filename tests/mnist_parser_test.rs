@@ -1,4 +1,4 @@
-use rstorch::data::mnist::{read_images, read_labels, read_labels_raw};
+use neuralrs::data::mnist::{read_images, read_labels, read_labels_raw};
 
 #[test]
 fn mnist_loads_correctly() {

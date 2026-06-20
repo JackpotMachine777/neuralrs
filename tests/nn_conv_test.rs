@@ -1,7 +1,7 @@
-use rstorch::tensor::Tensor;
-use rstorch::nn::module::Module;
-use rstorch::nn::conv::Conv2d;
-use rstorch::autograd::node::Node;
+use neuralrs::tensor::Tensor;
+use neuralrs::nn::module::Module;
+use neuralrs::nn::conv::Conv2d;
+use neuralrs::autograd::node::Node;
 
 #[test]
 fn conv2d_forward_test() {

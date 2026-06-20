@@ -1,9 +1,9 @@
-use rstorch::nn::transformer_block::TransformerBlock;
-use rstorch::nn::multihead::MultiHeadAttention;
-use rstorch::nn::normalization::LayerNorm;
-use rstorch::nn::linear::Linear;
-use rstorch::autograd::node::{Node, backward_graph};
-use rstorch::tensor::Tensor;
+use neuralrs::nn::transformer_block::TransformerBlock;
+use neuralrs::nn::multihead::MultiHeadAttention;
+use neuralrs::nn::normalization::LayerNorm;
+use neuralrs::nn::linear::Linear;
+use neuralrs::autograd::node::{Node, backward_graph};
+use neuralrs::tensor::Tensor;
 
 fn make_block(d_model: usize, d_ff: usize, num_heads: usize) -> TransformerBlock {
     let mk = |rows: usize, cols: usize, seed: f32| -> Vec<f32> {

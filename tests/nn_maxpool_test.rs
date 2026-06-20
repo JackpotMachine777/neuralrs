@@ -1,6 +1,6 @@
-use rstorch::nn::module::Module;
-use rstorch::nn::maxpool::MaxPool2d;
-use rstorch::autograd::node::Node;
+use neuralrs::nn::module::Module;
+use neuralrs::nn::maxpool::MaxPool2d;
+use neuralrs::autograd::node::Node;
 
 #[test]
 fn maxpool_test() {

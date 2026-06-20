@@ -1,5 +1,5 @@
-use rstorch::autograd::node::{Node, backward_graph};
-use rstorch::autograd::graph;
+use neuralrs::autograd::node::{Node, backward_graph};
+use neuralrs::autograd::graph;
 
 #[test]
 fn slice_concat_roundtrip() {

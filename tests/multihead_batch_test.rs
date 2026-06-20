@@ -1,6 +1,6 @@
-use rstorch::nn::multihead::MultiHeadAttention;
-use rstorch::autograd::node::{Node, backward_graph};
-use rstorch::tensor::Tensor;
+use neuralrs::nn::multihead::MultiHeadAttention;
+use neuralrs::autograd::node::{Node, backward_graph};
+use neuralrs::tensor::Tensor;
 
 fn make_mha(d_model: usize, num_heads: usize) -> MultiHeadAttention {
     let mk = |seed: f32| -> Vec<f32> {

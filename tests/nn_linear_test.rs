@@ -1,7 +1,7 @@
-use rstorch::tensor::Tensor;
-use rstorch::nn::linear::Linear;
-use rstorch::nn::module::Module;
-use rstorch::autograd::node::Node;
+use neuralrs::tensor::Tensor;
+use neuralrs::nn::linear::Linear;
+use neuralrs::nn::module::Module;
+use neuralrs::autograd::node::Node;
 
 #[test]
 fn linear_forward_backward_test() {

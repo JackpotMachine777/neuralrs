@@ -1,6 +1,6 @@
-use rstorch::autograd::graph::slice_cols::slice_cols;
-use rstorch::autograd::graph::concat_cols::concat_cols;
-use rstorch::autograd::node::{Node, backward_graph};
+use neuralrs::autograd::graph::slice_cols::slice_cols;
+use neuralrs::autograd::graph::concat_cols::concat_cols;
+use neuralrs::autograd::node::{Node, backward_graph};
 
 #[test]
 fn slice_cols_3d() {

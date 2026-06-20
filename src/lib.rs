@@ -1,4 +1,4 @@
-//! # RsTorch
+//! # NeuralRs
 //!
 //! A deep learning library written from scratch in Rust — its own autograd
 //! engine, a full neural-network stack, and a working Transformer.

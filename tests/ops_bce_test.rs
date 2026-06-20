@@ -1,5 +1,5 @@
-use rstorch::tensor::Tensor;
-use rstorch::ops::elementwise::bce::{bce, bce_grad};
+use neuralrs::tensor::Tensor;
+use neuralrs::ops::elementwise::bce::{bce, bce_grad};
 
 #[test]
 fn bce_test(){

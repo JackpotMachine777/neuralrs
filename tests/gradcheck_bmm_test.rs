@@ -1,5 +1,5 @@
-use rstorch::autograd::graph::bmm::bmm;
-use rstorch::autograd::node::{Node, backward_graph};
+use neuralrs::autograd::graph::bmm::bmm;
+use neuralrs::autograd::node::{Node, backward_graph};
 
 fn numerical_grad_a(a_data: &Vec<f32>, a_shape: &Vec<usize>, b_data: &Vec<f32>, b_shape: &Vec<usize>) -> Vec<f32> {
     let h = 1e-3;

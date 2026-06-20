@@ -1,5 +1,5 @@
-use rstorch::autograd::graph::softmax::softmax;
-use rstorch::autograd::node::{Node, backward_graph};
+use neuralrs::autograd::graph::softmax::softmax;
+use neuralrs::autograd::node::{Node, backward_graph};
 
 #[test]
 fn softmax_3d_forward() {

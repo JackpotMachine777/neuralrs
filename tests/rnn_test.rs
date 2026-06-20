@@ -1,7 +1,7 @@
-use rstorch::tensor::Tensor;
-use rstorch::nn::rnn::RNNCell;
-use rstorch::autograd::node::Node;
-use rstorch::init::xavier;
+use neuralrs::tensor::Tensor;
+use neuralrs::nn::rnn::RNNCell;
+use neuralrs::autograd::node::Node;
+use neuralrs::init::xavier;
 
 #[test]
 fn rnn_sequence_forward_backward() {

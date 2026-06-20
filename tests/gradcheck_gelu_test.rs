@@ -1,6 +1,6 @@
-use rstorch::nn::module::Module;
-use rstorch::nn::activations::gelu::GELU;
-use rstorch::autograd::node::Node;
+use neuralrs::nn::module::Module;
+use neuralrs::nn::activations::gelu::GELU;
+use neuralrs::autograd::node::Node;
 
 fn loss_of(out: &Vec<f32>) -> f32 {
     out.iter().enumerate().map(|(i, x)| (i as f32 + 1.0) * x).sum()

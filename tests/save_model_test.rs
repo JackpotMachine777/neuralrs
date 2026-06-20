@@ -1,10 +1,10 @@
-use rstorch::tensor::Tensor;
-use rstorch::nn::module::Module;
-use rstorch::nn::sequential::Sequential;
-use rstorch::nn::linear::Linear;
-use rstorch::nn::activations::relu::ReLU;
-use rstorch::serialize::{save_model, load_model};
-use rstorch::autograd::node::Node;
+use neuralrs::tensor::Tensor;
+use neuralrs::nn::module::Module;
+use neuralrs::nn::sequential::Sequential;
+use neuralrs::nn::linear::Linear;
+use neuralrs::nn::activations::relu::ReLU;
+use neuralrs::serialize::{save_model, load_model};
+use neuralrs::autograd::node::Node;
 
 fn make_model(seed_offset: f32) -> Sequential {
     Sequential {

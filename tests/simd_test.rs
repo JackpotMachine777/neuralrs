@@ -1,4 +1,4 @@
-use rstorch::ops::simd::dot_simd;
+use neuralrs::ops::simd::dot_simd;
 
 #[test]
 fn dot_simd_basic() {

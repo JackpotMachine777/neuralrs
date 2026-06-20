@@ -1,13 +1,13 @@
-# RsTorch
+# NeuralRs
 
 A deep learning library written from scratch in Rust — with its own autograd engine, a full neural network stack, and a working Transformer. Not a toy: it trains real models, every layer's gradient is numerically verified, and it reaches **99.44% on MNIST**.
 
-RsTorch mirrors the design of PyTorch (tensors, autograd, `nn` modules, optimizers) but is built end-to-end in Rust with minimal dependencies. The goal is a framework that is both **complete enough to be useful** and **readable enough to learn from** — if you've ever wanted to see how a deep learning framework actually works under the hood, the source is meant to be read.
+NeuralRs mirrors the design of PyTorch (tensors, autograd, `nn` modules, optimizers) but is built end-to-end in Rust with minimal dependencies. The goal is a framework that is both **complete enough to be useful** and **readable enough to learn from** — if you've ever wanted to see how a deep learning framework actually works under the hood, the source is meant to be read.
 
-## Why RsTorch?
+## Why NeuralRs?
 
 - **Built from scratch.** The autograd engine, every layer, every optimizer — all implemented by hand. No `libtorch` bindings, no autodiff crate. The only heavy lifting borrowed is an optional BLAS backend (off by default).
-- **Actually complete.** Most "I wrote a DL framework in Rust" projects stop at an MLP. RsTorch has convolutions, recurrent layers (RNN/LSTM), and a full batched Transformer block — all sharing one autograd engine.
+- **Actually complete.** Most "I wrote a DL framework in Rust" projects stop at an MLP. NeuralRs has convolutions, recurrent layers (RNN/LSTM), and a full batched Transformer block — all sharing one autograd engine.
 - **Verified, not hoped.** Every layer's backward pass is checked against numerical gradients. The Transformer, attention, batch-norm, conv — all gradient-checked in the test suite.
 - **Fast where it counts.** SIMD (AVX2) matmul, Rayon-parallel convolution and elementwise ops, and an optional pure-Rust BLAS backend via a feature flag.
 - **Readable.** The code is meant to be followed. If you want to understand how backprop, attention, or a conv layer really works, you can read the implementation top to bottom.
@@ -50,15 +50,15 @@ RsTorch mirrors the design of PyTorch (tensors, autograd, `nn` modules, optimize
 Build a model the way you would in PyTorch — stack layers in a `Sequential`, then run a standard forward / backward / step loop:
 
 ```rust
-use rstorch::nn::sequential::Sequential;
-use rstorch::nn::linear::Linear;
-use rstorch::nn::activations::relu::ReLU;
-use rstorch::nn::module::Module;
-use rstorch::nn::loss::{Loss, CrossEntropyLoss};
-use rstorch::optim::adamw::ADAMW;
-use rstorch::autograd::node::Node;
-use rstorch::tensor::Tensor;
-use rstorch::init::he;
+use neuralrs::nn::sequential::Sequential;
+use neuralrs::nn::linear::Linear;
+use neuralrs::nn::activations::relu::ReLU;
+use neuralrs::nn::module::Module;
+use neuralrs::nn::loss::{Loss, CrossEntropyLoss};
+use neuralrs::optim::adamw::ADAMW;
+use neuralrs::autograd::node::Node;
+use neuralrs::tensor::Tensor;
+use neuralrs::init::he;
 
 // A small MLP: 784 -> 128 -> 10
 let mut model = Sequential {
@@ -126,7 +126,7 @@ On MNIST (28×28 grayscale, 10 classes):
 
 ## Project status
 
-RsTorch is an actively developed personal project. The full training stack works today — CNNs, RNNs, and Transformers all train and their gradients are verified. Contributions, issues, and ideas are welcome.
+NeuralRs is an actively developed personal project. The full training stack works today — CNNs, RNNs, and Transformers all train and their gradients are verified. Contributions, issues, and ideas are welcome.
 
 ### Roadmap
 

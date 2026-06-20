@@ -1,6 +1,6 @@
-use rstorch::nn::module::Module;
-use rstorch::nn::avgpool::AvgPool2d;
-use rstorch::autograd::node::Node;
+use neuralrs::nn::module::Module;
+use neuralrs::nn::avgpool::AvgPool2d;
+use neuralrs::autograd::node::Node;
 
 #[test]
 fn avgpool_test() {

@@ -1,10 +1,10 @@
 [package]
-name = "rstorch"
+name = "neuralrs"
 version = "0.1.0"
 edition = "2024"
 description = "A deep learning library written from scratch in Rust — autograd, CNNs, RNNs, and Transformers"
 license = "Apache-2.0"
-repository = "https://github.com/JackpotMachine777/rstorch"
+repository = "https://github.com/JackpotMachine777/neuralrs"
 readme = "README.md"
 keywords = ["deep-learning", "machine-learning", "autograd", "neural-network", "transformer"]
 categories = ["science"]

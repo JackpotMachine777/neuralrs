@@ -1,5 +1,5 @@
-use rstorch::autograd::graph::reshape::reshape;
-use rstorch::autograd::node::{Node, backward_graph};
+use neuralrs::autograd::graph::reshape::reshape;
+use neuralrs::autograd::node::{Node, backward_graph};
 
 #[test]
 fn reshape_forward() {

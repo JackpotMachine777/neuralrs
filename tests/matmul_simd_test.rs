@@ -1,6 +1,6 @@
-use rstorch::tensor::Tensor;
-use rstorch::ops::matmul::matmul;
-use rstorch::ops::simd::matmul_simd;
+use neuralrs::tensor::Tensor;
+use neuralrs::ops::matmul::matmul;
+use neuralrs::ops::simd::matmul_simd;
 
 #[test]
 fn matmul_simd_matches_naive() {

@@ -1,5 +1,5 @@
-use rstorch::autograd::node::{Node, backward_graph};
-use rstorch::autograd::graph;
+use neuralrs::autograd::node::{Node, backward_graph};
+use neuralrs::autograd::graph;
 
 fn num_grad_unary<F>(input: &[f32], f: F) -> Vec<f32>
 where F: Fn(&[f32]) -> Vec<f32> {

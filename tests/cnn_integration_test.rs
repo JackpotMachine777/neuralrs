@@ -1,12 +1,12 @@
-use rstorch::tensor::Tensor;
-use rstorch::nn::module::Module;
-use rstorch::nn::conv::Conv2d;
-use rstorch::nn::maxpool::MaxPool2d;
-use rstorch::nn::flatten::Flatten;
-use rstorch::nn::linear::Linear;
-use rstorch::nn::activations::relu::ReLU;
-use rstorch::autograd::node::Node;
-use rstorch::init::he;
+use neuralrs::tensor::Tensor;
+use neuralrs::nn::module::Module;
+use neuralrs::nn::conv::Conv2d;
+use neuralrs::nn::maxpool::MaxPool2d;
+use neuralrs::nn::flatten::Flatten;
+use neuralrs::nn::linear::Linear;
+use neuralrs::nn::activations::relu::ReLU;
+use neuralrs::autograd::node::Node;
+use neuralrs::init::he;
 use std::rc::Rc;
 use std::cell::RefCell;
 

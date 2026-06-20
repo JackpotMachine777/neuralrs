@@ -1,8 +1,8 @@
-use rstorch::tensor::Tensor;
-use rstorch::nn::{module::Module, sequential::Sequential};
-use rstorch::nn::linear::Linear;
-use rstorch::nn::activations::relu::ReLU;
-use rstorch::autograd::node::Node;
+use neuralrs::tensor::Tensor;
+use neuralrs::nn::{module::Module, sequential::Sequential};
+use neuralrs::nn::linear::Linear;
+use neuralrs::nn::activations::relu::ReLU;
+use neuralrs::autograd::node::Node;
 
 #[test]
 fn sequential_forward_test() {

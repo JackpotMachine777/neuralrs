@@ -1,7 +1,7 @@
-use rstorch::nn::batchnorm2d::BatchNorm2d;
-use rstorch::nn::module::Module;
-use rstorch::autograd::node::Node;
-use rstorch::tensor::Tensor;
+use neuralrs::nn::batchnorm2d::BatchNorm2d;
+use neuralrs::nn::module::Module;
+use neuralrs::autograd::node::Node;
+use neuralrs::tensor::Tensor;
 
 fn numerical_grad(layer: &mut BatchNorm2d, input_data: &Vec<f32>, shape: &Vec<usize>) -> Vec<f32> {
     let h = 1e-3;

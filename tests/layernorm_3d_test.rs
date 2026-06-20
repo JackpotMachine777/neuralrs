@@ -1,7 +1,7 @@
-use rstorch::nn::normalization::LayerNorm;
-use rstorch::nn::module::Module;
-use rstorch::autograd::node::{Node, backward_graph};
-use rstorch::tensor::Tensor;
+use neuralrs::nn::normalization::LayerNorm;
+use neuralrs::nn::module::Module;
+use neuralrs::autograd::node::{Node, backward_graph};
+use neuralrs::tensor::Tensor;
 
 fn make_ln(features: usize) -> LayerNorm {
     LayerNorm {

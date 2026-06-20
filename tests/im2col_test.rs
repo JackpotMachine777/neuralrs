@@ -1,4 +1,4 @@
-use rstorch::ops::im2col::im2col;
+use neuralrs::ops::im2col::im2col;
 
 #[test]
 fn im2col_basic_test() {

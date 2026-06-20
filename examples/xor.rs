@@ -1,16 +1,16 @@
 // Minimal training example: a tiny 2-2-2 MLP trained with SGD on a single
-// input/target pair. The smallest end-to-end loop in RsTorch — useful as a
+// input/target pair. The smallest end-to-end loop in NeuralRs — useful as a
 // sanity check that forward, backward, and the optimizer all work together.
 
-use rstorch::tensor::Tensor;
-use rstorch::nn::module::Module;
-use rstorch::nn::linear::Linear;
-use rstorch::nn::sequential::Sequential;
-use rstorch::ops::elementwise::mse_node::mse_node;
-use rstorch::optim::sgd::SGD;
-use rstorch::nn::activations::relu::ReLU;
-use rstorch::autograd::node::Node;
-use rstorch::init::he;
+use neuralrs::tensor::Tensor;
+use neuralrs::nn::module::Module;
+use neuralrs::nn::linear::Linear;
+use neuralrs::nn::sequential::Sequential;
+use neuralrs::ops::elementwise::mse_node::mse_node;
+use neuralrs::optim::sgd::SGD;
+use neuralrs::nn::activations::relu::ReLU;
+use neuralrs::autograd::node::Node;
+use neuralrs::init::he;
 
 fn main(){
     let mut model = Sequential{

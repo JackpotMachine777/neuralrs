@@ -1,6 +1,6 @@
-use rstorch::tensor::Tensor;
-use rstorch::nn::linear::Linear;
-use rstorch::optim::clip::clip_grad_norm;
+use neuralrs::tensor::Tensor;
+use neuralrs::nn::linear::Linear;
+use neuralrs::optim::clip::clip_grad_norm;
 
 fn linear_with_grad(grad: Vec<f32>) -> Linear {
     let n = grad.len();

@@ -1,5 +1,5 @@
-use rstorch::autograd::node::Node;
-use rstorch::nn::attention::attention;
+use neuralrs::autograd::node::Node;
+use neuralrs::nn::attention::attention;
 
 #[test]
 fn attention_forward_backward() {
@@ -16,7 +16,7 @@ fn attention_forward_backward() {
     assert_eq!(out.borrow().shape, vec![seq_len, d]);
 
     out.borrow_mut().grad = vec![1.0; seq_len * d];
-    rstorch::autograd::node::backward_graph(&out);
+    neuralrs::autograd::node::backward_graph(&out);
 
     let q_grad: f32 = q.borrow().grad.iter().map(|x| x.abs()).sum();
     let k_grad: f32 = k.borrow().grad.iter().map(|x| x.abs()).sum();

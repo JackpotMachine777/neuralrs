@@ -1,4 +1,4 @@
-use rstorch::optim::scheduler::{Scheduler, StepLR, ExponentialLR, CosineAnnealingLR, WarmupCosine};
+use neuralrs::optim::scheduler::{Scheduler, StepLR, ExponentialLR, CosineAnnealingLR, WarmupCosine};
 
 #[test]
 fn step_lr() {

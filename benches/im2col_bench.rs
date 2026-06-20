@@ -1,9 +1,9 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use rstorch::tensor::Tensor;
-use rstorch::nn::module::Module;
-use rstorch::nn::conv::Conv2d;
-use rstorch::autograd::node::Node;
-use rstorch::ops::im2col::conv2d_im2col;
+use neuralrs::tensor::Tensor;
+use neuralrs::nn::module::Module;
+use neuralrs::nn::conv::Conv2d;
+use neuralrs::autograd::node::Node;
+use neuralrs::ops::im2col::conv2d_im2col;
 use std::rc::Rc;
 use std::cell::RefCell;
 

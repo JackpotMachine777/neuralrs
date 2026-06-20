@@ -1,5 +1,5 @@
-use rstorch::autograd::node::Node;
-use rstorch::autograd::graph::softmax;
+use neuralrs::autograd::node::Node;
+use neuralrs::autograd::graph::softmax;
 
 #[test]
 fn softmax_batch_test() {

@@ -1,6 +1,6 @@
-use rstorch::autograd::graph::relu::relu;
-use rstorch::autograd::graph::mul::mul;
-use rstorch::autograd::node::{Node, backward_graph};
+use neuralrs::autograd::graph::relu::relu;
+use neuralrs::autograd::graph::mul::mul;
+use neuralrs::autograd::node::{Node, backward_graph};
 
 #[test]
 fn relu_parallel_correct() {

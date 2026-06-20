@@ -1,6 +1,6 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use rstorch::tensor::Tensor;
-use rstorch::ops::matmul::matmul;
+use neuralrs::tensor::Tensor;
+use neuralrs::ops::matmul::matmul;
 
 fn matmul_benchmark(c: &mut Criterion) {
     let n = 512;

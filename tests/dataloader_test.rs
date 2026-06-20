@@ -1,4 +1,4 @@
-use rstorch::data::dataloader::DataLoader;
+use neuralrs::data::dataloader::DataLoader;
 
 #[test]
 fn dataloader_batching() {

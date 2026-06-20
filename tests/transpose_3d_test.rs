@@ -1,5 +1,5 @@
-use rstorch::autograd::graph::transpose::transpose;
-use rstorch::autograd::node::{Node, backward_graph};
+use neuralrs::autograd::graph::transpose::transpose;
+use neuralrs::autograd::node::{Node, backward_graph};
 
 #[test]
 fn transpose_3d_forward() {

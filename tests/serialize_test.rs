@@ -1,6 +1,6 @@
-use rstorch::tensor::Tensor;
-use rstorch::nn::linear::Linear;
-use rstorch::serialize::{save_linear, load_linear};
+use neuralrs::tensor::Tensor;
+use neuralrs::nn::linear::Linear;
+use neuralrs::serialize::{save_linear, load_linear};
 
 #[test]
 fn save_load_linear_test() {

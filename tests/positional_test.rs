@@ -1,5 +1,5 @@
-use rstorch::nn::positional::PositionalEncoding;
-use rstorch::autograd::node::{Node, backward_graph};
+use neuralrs::nn::positional::PositionalEncoding;
+use neuralrs::autograd::node::{Node, backward_graph};
 
 #[test]
 fn positional_encoding_values() {

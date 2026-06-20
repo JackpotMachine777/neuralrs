@@ -1,6 +1,6 @@
-use rstorch::nn::module::Module;
-use rstorch::nn::flatten::Flatten;
-use rstorch::autograd::node::Node;
+use neuralrs::nn::module::Module;
+use neuralrs::nn::flatten::Flatten;
+use neuralrs::autograd::node::Node;
 
 #[test]
 fn flatten_test() {

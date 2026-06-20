@@ -1,7 +1,7 @@
-use rstorch::tensor::Tensor;
-use rstorch::nn::module::Module;
-use rstorch::nn::batchnorm::BatchNorm;
-use rstorch::autograd::node::Node;
+use neuralrs::tensor::Tensor;
+use neuralrs::nn::module::Module;
+use neuralrs::nn::batchnorm::BatchNorm;
+use neuralrs::autograd::node::Node;
 
 fn make_bn() -> BatchNorm {
     BatchNorm {

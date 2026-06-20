@@ -1,7 +1,7 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use rstorch::tensor::Tensor;
-use rstorch::ops::matmul::matmul;
-use rstorch::ops::simd::matmul_simd;
+use neuralrs::tensor::Tensor;
+use neuralrs::ops::matmul::matmul;
+use neuralrs::ops::simd::matmul_simd;
 
 fn matmul_comparison(c: &mut Criterion) {
     let n = 512;

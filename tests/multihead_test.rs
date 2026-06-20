@@ -1,7 +1,7 @@
-use rstorch::tensor::Tensor;
-use rstorch::nn::multihead::MultiHeadAttention;
-use rstorch::autograd::node::{Node, backward_graph};
-use rstorch::init::xavier;
+use neuralrs::tensor::Tensor;
+use neuralrs::nn::multihead::MultiHeadAttention;
+use neuralrs::autograd::node::{Node, backward_graph};
+use neuralrs::init::xavier;
 
 #[test]
 fn multihead_forward_backward() {

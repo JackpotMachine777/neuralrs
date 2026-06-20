@@ -1,6 +1,6 @@
-use rstorch::nn::module::Module;
-use rstorch::nn::dropout2d::Dropout2d;
-use rstorch::autograd::node::{Node, backward_graph};
+use neuralrs::nn::module::Module;
+use neuralrs::nn::dropout2d::Dropout2d;
+use neuralrs::autograd::node::{Node, backward_graph};
 
 #[test]
 fn dropout2d_eval_passthrough() {

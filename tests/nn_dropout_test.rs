@@ -1,6 +1,6 @@
-use rstorch::nn::module::Module;
-use rstorch::nn::dropout::Dropout;
-use rstorch::autograd::node::Node;
+use neuralrs::nn::module::Module;
+use neuralrs::nn::dropout::Dropout;
+use neuralrs::autograd::node::Node;
 
 #[test]
 fn dropout_test(){

@@ -1,6 +1,6 @@
-use rstorch::tensor::Tensor;
-use rstorch::nn::embedding::Embedding;
-use rstorch::autograd::node::backward_graph;
+use neuralrs::tensor::Tensor;
+use neuralrs::nn::embedding::Embedding;
+use neuralrs::autograd::node::backward_graph;
 
 fn make_embedding() -> Embedding {
 

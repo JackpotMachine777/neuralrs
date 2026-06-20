@@ -1,10 +1,10 @@
-use rstorch::nn::module::Module;
-use rstorch::nn::linear::Linear;
-use rstorch::tensor::Tensor;
-use rstorch::autograd::node::Node;
-use rstorch::optim::adagrad::Adagrad;
-use rstorch::optim::nesterov::NesterovSGD;
-use rstorch::optim::nadam::NAdam;
+use neuralrs::nn::module::Module;
+use neuralrs::nn::linear::Linear;
+use neuralrs::tensor::Tensor;
+use neuralrs::autograd::node::Node;
+use neuralrs::optim::adagrad::Adagrad;
+use neuralrs::optim::nesterov::NesterovSGD;
+use neuralrs::optim::nadam::NAdam;
 
 fn make_linear(init: f32) -> Linear {
     Linear {

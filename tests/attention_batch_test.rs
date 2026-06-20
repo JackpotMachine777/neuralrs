@@ -1,5 +1,5 @@
-use rstorch::nn::attention::attention_batch;
-use rstorch::autograd::node::{Node, backward_graph};
+use neuralrs::nn::attention::attention_batch;
+use neuralrs::autograd::node::{Node, backward_graph};
 
 fn numerical_grad(
     target: char,

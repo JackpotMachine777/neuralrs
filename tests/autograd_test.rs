@@ -1,6 +1,6 @@
-use rstorch::autograd::node::Node;
-use rstorch::autograd::graph;
-use rstorch::autograd::engine;
+use neuralrs::autograd::node::Node;
+use neuralrs::autograd::graph;
+use neuralrs::autograd::engine;
 
 #[test]
 fn autograd_add_test() {

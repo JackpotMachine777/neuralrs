@@ -1,5 +1,5 @@
-use rstorch::tensor::Tensor;
-use rstorch::ops::matmul::matmul;
+use neuralrs::tensor::Tensor;
+use neuralrs::ops::matmul::matmul;
 
 #[test]
 fn matmul_correct_small() {

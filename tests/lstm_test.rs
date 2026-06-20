@@ -1,7 +1,7 @@
-use rstorch::tensor::Tensor;
-use rstorch::nn::lstm::LSTMCell;
-use rstorch::autograd::node::Node;
-use rstorch::init::xavier;
+use neuralrs::tensor::Tensor;
+use neuralrs::nn::lstm::LSTMCell;
+use neuralrs::autograd::node::Node;
+use neuralrs::init::xavier;
 
 fn make_cell(input_size: usize, hidden_size: usize) -> LSTMCell {
     let w = |a, b| Tensor::new(xavier::xavier(a, b), vec![a, b]);

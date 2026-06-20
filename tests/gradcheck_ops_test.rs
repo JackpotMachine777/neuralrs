@@ -1,6 +1,6 @@
-use rstorch::autograd::node::Node;
-use rstorch::autograd::graph::{sub, div, exp, pow};
-use rstorch::autograd::engine;
+use neuralrs::autograd::node::Node;
+use neuralrs::autograd::graph::{sub, div, exp, pow};
+use neuralrs::autograd::engine;
 
 fn num_grad_unary<F>(input: &Vec<f32>, f: F) -> Vec<f32> where F: Fn(&Vec<f32>) -> Vec<f32> {
     let h = 1e-3;
@@ -89,7 +89,7 @@ fn gradcheck_pow() {
 
 #[test]
 fn gradcheck_log() {
-    use rstorch::autograd::graph::log;
+    use neuralrs::autograd::graph::log;
     let a_data = vec![1.0, 2.0, 5.0];
     let a = Node::new(a_data.clone(), vec![3]);
     let c = log::log(a.clone());
@@ -108,7 +108,7 @@ fn gradcheck_log() {
 
 #[test]
 fn gradcheck_sqrt() {
-    use rstorch::autograd::graph::sqrt;
+    use neuralrs::autograd::graph::sqrt;
     let a_data = vec![1.0, 4.0, 9.0];
     let a = Node::new(a_data.clone(), vec![3]);
     let c = sqrt::sqrt(a.clone());
@@ -127,7 +127,7 @@ fn gradcheck_sqrt() {
 
 #[test]
 fn gradcheck_abs() {
-    use rstorch::autograd::graph::abs;
+    use neuralrs::autograd::graph::abs;
     let a_data = vec![2.0, -3.0, 5.0];
     let a = Node::new(a_data.clone(), vec![3]);
     let c = abs::abs(a.clone());
