@@ -5,10 +5,8 @@
 
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::sync::Arc;
-use std::sync::OnceLock;
 
-use cudarc::driver::{CudaModule, LaunchConfig, PushKernelArg};
+use cudarc::driver::{LaunchConfig, PushKernelArg};
 
 use super::backend;
 use super::graph::accumulate_into;
@@ -22,11 +20,7 @@ const KERNEL: &str = r#"
     }
 "#;
 
-static MODULE: OnceLock<Arc<CudaModule>> = OnceLock::new();
-
-fn module() -> &'static Arc<CudaModule> {
-    MODULE.get_or_init(|| backend::compile(KERNEL))
-}
+crate::kernel_module!(KERNEL);
 
 /// Element-wise add of two resident nodes: `out = a + b`, computed and kept on
 /// the GPU. The result is also resident (its CPU `data` stays empty).

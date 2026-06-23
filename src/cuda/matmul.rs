@@ -1,7 +1,4 @@
-use std::sync::Arc;
-use std::sync::OnceLock;
-
-use cudarc::driver::{CudaModule, LaunchConfig, PushKernelArg};
+use cudarc::driver::{LaunchConfig, PushKernelArg};
 
 use super::backend;
 
@@ -53,11 +50,7 @@ const KERNEL: &str = r#"
     }
 "#;
 
-static MODULE: OnceLock<Arc<CudaModule>> = OnceLock::new();
-
-fn module() -> &'static Arc<CudaModule> {
-    MODULE.get_or_init(|| backend::compile(KERNEL))
-}
+crate::kernel_module!(KERNEL);
 
 fn launch(kernel: &str, a: &[f32], b: &[f32], m: usize, k: usize, n: usize) -> Vec<f32> {
     assert_eq!(a.len(), m * k, "cuda matmul: A must have M*K elements");

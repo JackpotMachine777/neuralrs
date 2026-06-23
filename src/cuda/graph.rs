@@ -11,10 +11,8 @@
 
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::sync::Arc;
-use std::sync::OnceLock;
 
-use cudarc::driver::{CudaModule, LaunchConfig, PushKernelArg, CudaSlice};
+use cudarc::driver::{LaunchConfig, PushKernelArg, CudaSlice};
 
 use super::backend;
 use crate::autograd::node::{GpuBuffers, Node};
@@ -27,11 +25,21 @@ const KERNEL: &str = r#"
     }
 "#;
 
-static MODULE: OnceLock<Arc<CudaModule>> = OnceLock::new();
+/// Generates a cached `module()` for an op: compiles its kernel via NVRTC once,
+/// on first use, and reuses it. Each op gets its own cache (one OnceLock each),
+/// they hold different modules, so they can't share one static.
+#[macro_export]
+macro_rules! kernel_module {
+    ($src:expr) => {
+        static MODULE: std::sync::OnceLock<std::sync::Arc<cudarc::driver::CudaModule>> =
+            std::sync::OnceLock::new();
 
-fn module() -> &'static Arc<CudaModule> {
-    MODULE.get_or_init(|| backend::compile(KERNEL))
+        fn module() -> &'static std::sync::Arc<cudarc::driver::CudaModule> {
+            MODULE.get_or_init(|| $crate::cuda::backend::compile($src))
+        }
+    };
 }
+crate::kernel_module!(KERNEL);
 
 /// Moves a node's data onto the GPU (host -> device) and allocates a zeroed
 /// gradient buffer there too. Afterwards the node's `gpu` field is populated.
