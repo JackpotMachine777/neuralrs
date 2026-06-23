@@ -47,3 +47,7 @@ harness = false
 [[bench]]
 name = "matmul_simd_bench"
 harness = false
+
+[[bench]]
+name = "cuda_matmul_bench"
+harness = false
