@@ -1,7 +1,9 @@
 #![cfg(feature = "cuda")]
 
-use neuralrs::autograd::node::Node;
-use neuralrs::cuda::graph;
+use neuralrs::autograd::node::{backward_graph, Node};
+use neuralrs::autograd::graph as cpu;
+use neuralrs::cuda::graph as gpu;
+use neuralrs::cuda::add::add;
 
 #[test]
 fn cuda_resident_add_forward() {
@@ -16,13 +18,13 @@ fn cuda_resident_add_forward() {
     let gb = Node::new(b, vec![n]);
     let gc = Node::new(c, vec![n]);
     
-    graph::to_cuda(&ga);
-    graph::to_cuda(&gb);
-    graph::to_cuda(&gc);
+    gpu::to_cuda(&ga);
+    gpu::to_cuda(&gb);
+    gpu::to_cuda(&gc);
 
-    let ab = graph::add(&ga, &gb);
-    let sum = graph::add(&ab, &gc);
-    let out = graph::to_host(&sum);
+    let ab = add(&ga, &gb);
+    let sum = add(&ab, &gc);
+    let out = gpu::to_host(&sum);
 
     assert_eq!(out.len(), n);
     for i in 0..n {
@@ -38,10 +40,6 @@ fn cuda_resident_add_forward() {
 
 #[test]
 fn cuda_resident_add_backward() {
-    use neuralrs::autograd::graph;
-    use neuralrs::autograd::node::backward_graph;
-    use neuralrs::cuda::graph as gpu;
-
     let n: usize = 4096;
     let a: Vec<f32> = (0..n).map(|i| (i % 17) as f32 * 0.1 - 0.8).collect();
     let b: Vec<f32> = (0..n).map(|i| (i % 23) as f32 * 0.05 - 0.5).collect();
@@ -51,11 +49,11 @@ fn cuda_resident_add_backward() {
     let ca = Node::new(a.clone(), vec![n]);
     let cb = Node::new(b.clone(), vec![n]);
     let cc = Node::new(c.clone(), vec![n]);
-    let csum = graph::add(graph::add(ca.clone(), cb.clone()), cc.clone());
+    let csum = cpu::add(cpu::add(ca.clone(), cb.clone()), cc.clone());
 
     csum.borrow_mut().grad = seed.clone();
     backward_graph(&csum);
-
+    
     let cga = ca.borrow().grad.clone();
     let cgb = cb.borrow().grad.clone();
     let cgc = cc.borrow().grad.clone();
@@ -67,8 +65,8 @@ fn cuda_resident_add_backward() {
     gpu::to_cuda(&ga);
     gpu::to_cuda(&gb);
     gpu::to_cuda(&gc);
-    let gsum = gpu::add(&gpu::add(&ga, &gb), &gc);
 
+    let gsum = add(&add(&ga, &gb), &gc);
     gpu::set_grad(&gsum, &seed);
     backward_graph(&gsum);
 
@@ -81,6 +79,6 @@ fn cuda_resident_add_backward() {
         assert!((ggb[i] - cgb[i]).abs() < 1e-4, "b.grad at {i}: gpu {} cpu {}", ggb[i], cgb[i]);
         assert!((ggc[i] - cgc[i]).abs() < 1e-4, "c.grad at {i}: gpu {} cpu {}", ggc[i], cgc[i]);
     }
-    
+
     println!("resident (a+b)+c backward: gpu grads match cpu over {n} elements");
 }
