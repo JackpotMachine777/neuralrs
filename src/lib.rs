@@ -40,3 +40,6 @@ pub mod init;
 pub mod serialize;
 pub mod data;
 pub mod train;
+
+#[cfg(feature = "cuda")]
+pub mod cuda;

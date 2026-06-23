@@ -17,9 +17,11 @@ rand = "0.8"
 rand_distr = "0.4"
 rayon = "1.10"
 matrixmultiply = { version = "0.3", optional = true }
+cudarc = { version = "0.19", features = ["cuda-version-from-build-system"], optional = true }
 
 [features]
 blas = ["matrixmultiply"]
+cuda = ["dep:cudarc"]
 
 [lints.clippy]
 needless_range_loop = "allow"
