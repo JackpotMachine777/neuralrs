@@ -14,7 +14,7 @@ use std::rc::Rc;
 use std::sync::Arc;
 use std::sync::OnceLock;
 
-use cudarc::driver::{CudaModule, LaunchConfig, PushKernelArg};
+use cudarc::driver::{CudaModule, LaunchConfig, PushKernelArg, CudaSlice};
 
 use super::backend;
 use crate::autograd::node::{GpuBuffers, Node};
@@ -24,6 +24,12 @@ const KERNEL: &str = r#"
         size_t i = blockIdx.x * blockDim.x + threadIdx.x;
 
         if(i < n) out[i] = a[i] + b[i];
+    }
+
+    extern "C" __global__ void accumulate(float* acc, const float* src, const size_t n) {
+        size_t i = blockIdx.x * blockDim.x + threadIdx.x;
+
+        if(i < n) acc[i] += src[i];
     }
 "#;
 
@@ -59,6 +65,46 @@ pub fn to_host(node: &Rc<RefCell<Node>>) -> Vec<f32> {
     let gpu = n.gpu.as_ref().expect("to_host: node is not on the GPU");
 
     stream.clone_dtoh(&gpu.data).expect("to_host: dtoh failed")
+}
+
+/// Launches `target.grad += src` on the GPU. The accumulation pattern at the
+/// heart of autograd, gradients add up, they don't overwrite.
+fn accumulate_into(target: &Rc<RefCell<Node>>, src: &Rc<RefCell<CudaSlice<f32>>>, n: usize) {
+    let stream = backend::stream();
+    let t = target.borrow();
+    let t_gpu = t.gpu.as_ref().expect("backward: parent not on GPU");
+    let mut dst = t_gpu.grad.borrow_mut();
+    let s = src.borrow();
+
+    let acc = module().load_function("accumulate").expect("accumulate not found");
+    let cfg = LaunchConfig::for_num_elems(n as u32);
+    let mut builder = stream.launch_builder(&acc);
+    builder.arg(&mut *dst);
+    builder.arg(&*s);
+    builder.arg(&n);
+    unsafe {
+        builder.launch(cfg).expect("accumulate launch failed");
+    }
+}
+
+/// Overwrites a resident node's gradient with the given values (host -> device).
+/// Used to seed the upstream gradient before a backward pass.
+pub fn set_grad(node: &Rc<RefCell<Node>>, grad: &[f32]) {
+    let stream = backend::stream();
+    let n = node.borrow();
+    let gpu = n.gpu.as_ref().expect("set_grad: node not on GPU");
+    let new = stream.clone_htod(grad).expect("set_grad: htod failed");
+    *gpu.grad.borrow_mut() = new;
+}
+
+/// Reads a resident node's gradient back to host memory (device -> host).
+pub fn read_grad(node: &Rc<RefCell<Node>>) -> Vec<f32> {
+    let stream = backend::stream();
+    let n = node.borrow();
+    let gpu = n.gpu.as_ref().expect("read_grad: node not on GPU");
+    let g = gpu.grad.borrow();
+
+    stream.clone_dtoh(&*g).expect("read_grad: dtoh failed")
 }
 
 /// Element-wise add of two resident nodes: `out = a + b`, computed and kept on
@@ -97,12 +143,22 @@ pub fn add(a: &Rc<RefCell<Node>>, b: &Rc<RefCell<Node>>) -> Rc<RefCell<Node>> {
     {
         let mut n = out_node.borrow_mut();
         n.parents = vec![a.clone(), b.clone()];
-        let grad = stream.alloc_zeros::<f32>(len).expect("cuda add: grad alloc failed");
-
+        
+        let grad = Rc::new(RefCell::new(
+            stream.alloc_zeros::<f32>(len).expect("cuda add: grad alloc failed"),
+        ));
         n.gpu = Some(GpuBuffers {
             data: out_data,
-            grad: Rc::new(RefCell::new(grad)),
+            grad: grad.clone(),
         });
+
+        let a_bwd = a.clone();
+        let b_bwd = b.clone();
+
+        n.backward_fn = Some(Box::new(move |_grad: &Vec<f32>| {
+            accumulate_into(&a_bwd, &grad, len);
+            accumulate_into(&b_bwd, &grad, len);
+        }));
     }
 
     out_node
