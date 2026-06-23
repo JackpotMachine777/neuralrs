@@ -8,3 +8,4 @@ mod backend;
 
 pub mod add;            pub use add::add;
 pub mod matmul;         pub use matmul::{matmul, matmul_naive};
+pub mod graph;
