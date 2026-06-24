@@ -6,11 +6,10 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use cudarc::driver::{LaunchConfig, PushKernelArg};
-
-use super::backend;
-use super::graph::accumulate_into;
+use crate::cuda::backend;
+use crate::cuda::runtime::accumulate_into;
 use crate::autograd::node::{GpuBuffers, Node};
+use cudarc::driver::{LaunchConfig, PushKernelArg};
 
 const KERNEL: &str = r#"
     extern "C" __global__ void vadd(float* out, const float* a, const float* b, const size_t n) {

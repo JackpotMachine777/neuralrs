@@ -7,11 +7,10 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use cudarc::driver::{CudaSlice, LaunchConfig, PushKernelArg};
-
-use super::backend;
-use super::graph::accumulate_into;
+use crate::cuda::backend;
+use crate::cuda::runtime::accumulate_into;
 use crate::autograd::node::{GpuBuffers, Node};
+use cudarc::driver::{CudaSlice, LaunchConfig, PushKernelArg};
 
 const KERNEL: &str = r#"
     extern "C" __global__ void vmul(float* out, const float* a, const float* b, const size_t n) {

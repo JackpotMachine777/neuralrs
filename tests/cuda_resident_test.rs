@@ -2,9 +2,8 @@
 
 use neuralrs::autograd::node::{backward_graph, Node};
 use neuralrs::autograd::graph as cpu;
-use neuralrs::cuda::graph as gpu;
-use neuralrs::cuda::add::add;
-use neuralrs::cuda::mul::mul;
+use neuralrs::cuda::runtime as gpu;
+use neuralrs::cuda::graph::{add, mul};
 
 #[test]
 fn cuda_resident_add_forward() {

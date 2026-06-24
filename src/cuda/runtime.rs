@@ -1,13 +1,6 @@
-//! GPU-resident autograd graph ops.
-//!
-//! Unlike the device-level helpers in `add`/`matmul` (which copy host -> device
-//! -> host on every call), these run on data that already lives on the GPU and
-//! leave the result there. Chain several together and the intermediates never
-//! touch the CPU, that's the point of residency, and what makes training fast
-//! instead of drowning in PCIe transfers.
-//!
-//! Move a node onto the device with [`to_cuda`], build a graph with the resident
-//! ops, then read a result back with [`to_host`].
+//! GPU residency runtime: moving nodes on/off the device, seeding/reading
+//! gradients, and the shared gradient-accumulation primitive every backward
+//! pass uses. The resident ops themselves (add, mul, ...) live in `graph/`.
 
 use std::cell::RefCell;
 use std::rc::Rc;
