@@ -82,3 +82,40 @@ fn cuda_resident_add_backward() {
 
     println!("resident (a+b)+c backward: gpu grads match cpu over {n} elements");
 }
+
+#[test]
+fn cuda_resident_bias_add_backward() {
+    let (batch, features) = (32usize, 48usize);
+    let x: Vec<f32> = (0..batch * features).map(|i| (i % 19) as f32 * 0.1 - 0.9).collect();
+    let bias: Vec<f32> = (0..features).map(|i| (i % 7) as f32 * 0.2 - 0.6).collect();
+    let seed: Vec<f32> = (0..batch * features).map(|i| (i % 5) as f32 * 0.3 + 0.1).collect();
+
+    let cx = Node::new(x.clone(), vec![batch, features]);
+    let cb = Node::new(bias.clone(), vec![features]);
+    let cout = cpu::add(cx.clone(), cb.clone());
+    cout.borrow_mut().grad = seed.clone();
+    backward_graph(&cout);
+    let cout_data = cout.borrow().data.clone();
+    let cgx = cx.borrow().grad.clone();
+    let cgb = cb.borrow().grad.clone();
+
+    let gx = Node::new(x, vec![batch, features]);
+    let gb = Node::new(bias, vec![features]);
+    gpu::to_cuda(&gx);
+    gpu::to_cuda(&gb);
+    let gout = add(&gx, &gb);
+    let gout_data = gpu::to_host(&gout);
+    gpu::set_grad(&gout, &seed);
+    backward_graph(&gout);
+    let ggx = gpu::read_grad(&gx);
+    let ggb = gpu::read_grad(&gb);
+
+    for i in 0..batch * features {
+        assert!((gout_data[i] - cout_data[i]).abs() < 1e-4, "fwd at {i}: gpu {} cpu {}", gout_data[i], cout_data[i]);
+        assert!((ggx[i] - cgx[i]).abs() < 1e-4, "x.grad at {i}: gpu {} cpu {}", ggx[i], cgx[i]);
+    }
+    for f in 0..features {
+        assert!((ggb[f] - cgb[f]).abs() < 1e-4, "bias.grad at {f}: gpu {} cpu {}", ggb[f], cgb[f]);
+    }
+    println!("resident bias-add forward+backward: gpu matches cpu (batch {batch}, features {features})");
+}
