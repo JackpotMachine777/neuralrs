@@ -101,3 +101,15 @@ pub fn read_grad(node: &Rc<RefCell<Node>>) -> Vec<f32> {
 
     stream.clone_dtoh(&*g).expect("read_grad: dtoh failed")
 }
+
+/// Zeros the gradient buffers of the given resident nodes. Call before each
+/// backward pass so gradients don't accumulate across training steps.
+pub fn zero_grad(params: &[Rc<RefCell<Node>>]) {
+    let stream = backend::stream();
+    for p in params {
+        let n = p.borrow();
+        let gpu = n.gpu.as_ref().expect("zero_grad: node not on GPU");
+        let len = gpu.grad.borrow().len();
+        *gpu.grad.borrow_mut() = stream.alloc_zeros::<f32>(len).expect("zero_grad: alloc failed");
+    }
+}
