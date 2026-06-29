@@ -1,5 +1,11 @@
 pub mod add;            pub use add::add;
+pub mod sub;            pub use sub::sub;
 pub mod mul;            pub use mul::mul;
+pub mod div;            pub use div::div;
+pub mod exp;            pub use exp::exp;
+pub mod log;            pub use log::log;
+pub mod sqrt;           pub use sqrt::sqrt;
+pub mod abs;            pub use abs::abs;
 pub mod relu;           pub use relu::relu;
 pub mod matmul;         pub use matmul::matmul;
 pub mod reshape;        pub use reshape::reshape;
