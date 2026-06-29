@@ -2,7 +2,7 @@
 
 use neuralrs::autograd::node::Node;
 use neuralrs::cuda::runtime as gpu;
-use neuralrs::cuda::graph::batchnorm;
+use neuralrs::cuda::nn::batchnorm;
 use neuralrs::nn::batchnorm::BatchNorm;
 use neuralrs::nn::module::Module;
 use neuralrs::tensor::Tensor;

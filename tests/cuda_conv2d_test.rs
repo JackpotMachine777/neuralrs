@@ -2,7 +2,7 @@
 
 use neuralrs::autograd::node::Node;
 use neuralrs::cuda::runtime as gpu;
-use neuralrs::cuda::graph::conv2d;
+use neuralrs::cuda::nn::conv2d;
 use neuralrs::ops::im2col::conv2d_im2col;
 use neuralrs::autograd::node::backward_graph;
 use neuralrs::nn::conv::Conv2d;

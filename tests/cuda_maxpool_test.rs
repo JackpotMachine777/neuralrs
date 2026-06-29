@@ -2,7 +2,7 @@
 
 use neuralrs::autograd::node::{backward_graph, Node};
 use neuralrs::cuda::runtime as gpu;
-use neuralrs::cuda::graph::maxpool2d;
+use neuralrs::cuda::nn::maxpool2d;
 use neuralrs::nn::maxpool::MaxPool2d;
 use neuralrs::nn::module::Module;
 
