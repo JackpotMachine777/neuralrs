@@ -17,3 +17,8 @@ pub mod silu;           pub use silu::silu;
 pub mod leaky_relu;     pub use leaky_relu::leaky_relu;
 pub mod scale;          pub use scale::scale;
 pub mod pow;            pub use pow::pow;
+pub mod transpose;      pub use transpose::transpose;
+pub mod slice_cols;     pub use slice_cols::slice_cols;
+pub mod concat_cols;    pub use concat_cols::concat_cols;
+pub mod bmm;            pub use bmm::bmm;
+pub mod softmax;        pub use softmax::softmax;
