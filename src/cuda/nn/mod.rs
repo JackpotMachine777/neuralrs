@@ -6,3 +6,6 @@ pub mod conv;           pub use conv::conv2d;
 pub mod dropout;        pub use dropout::dropout;
 pub mod flatten;        pub use flatten::flatten;
 pub mod maxpool;        pub use maxpool::maxpool2d;
+pub mod avgpool;        pub use avgpool::avgpool2d;
+pub mod normalization;  pub use normalization::layernorm;
+pub mod embedding;      pub use embedding::Embedding;
