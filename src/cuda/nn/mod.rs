@@ -9,3 +9,6 @@ pub mod maxpool;        pub use maxpool::maxpool2d;
 pub mod avgpool;        pub use avgpool::avgpool2d;
 pub mod normalization;  pub use normalization::layernorm;
 pub mod embedding;      pub use embedding::Embedding;
+pub mod attention;      pub use attention::{attention, attention_batch};
+pub mod rnn;            pub use rnn::RNNCell;
+pub mod lstm;           pub use lstm::LSTMCell;
