@@ -162,3 +162,22 @@ pub fn layernorm(
     }
     out_node
 }
+
+/// A layer-norm layer wrapping resident gamma/beta nodes `[features]`, calling
+/// the [`layernorm`] op. Mirrors the CPU `LayerNorm`.
+pub struct LayerNorm {
+    pub gamma: Rc<RefCell<Node>>,
+    pub beta: Rc<RefCell<Node>>,
+    pub eps: f32,
+}
+
+impl LayerNorm {
+    pub fn new(gamma: Rc<RefCell<Node>>, beta: Rc<RefCell<Node>>, eps: f32) -> Self {
+        Self { gamma, beta, eps }
+    }
+
+    /// Layer-normalizes a resident input over its last dim.
+    pub fn forward(&self, x: &Rc<RefCell<Node>>) -> Rc<RefCell<Node>> {
+        layernorm(x, &self.gamma, &self.beta, self.eps)
+    }
+}
