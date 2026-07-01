@@ -12,3 +12,7 @@ pub mod embedding;      pub use embedding::Embedding;
 pub mod attention;      pub use attention::{attention, attention_batch};
 pub mod rnn;            pub use rnn::RNNCell;
 pub mod lstm;           pub use lstm::LSTMCell;
+pub mod linear;         pub use linear::Linear;
+pub mod positional;     pub use positional::PositionalEncoding;
+pub mod self_attention; pub use self_attention::SelfAttention;
+pub mod multihead;      pub use multihead::MultiHeadAttention;
