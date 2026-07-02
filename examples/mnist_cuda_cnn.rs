@@ -165,6 +165,7 @@ mod gpu_cnn {
             loader.shuffle();
             let nb = loader.num_batches();
             let mut epoch_loss = 0.0;
+            let (mut t_fwd, mut t_bwd, mut t_step) = (0.0f32, 0.0f32, 0.0f32);
             let start = Instant::now();
 
             for b in 0..nb {
@@ -176,13 +177,27 @@ mod gpu_cnn {
                 gpu::to_cuda(&target);
 
                 gpu::zero_grad(&trainable);
+
+                gpu::synchronize();
+                let t0 = Instant::now();
                 let logits = forward(&input, &p, true);
                 let loss = cross_entropy(&logits, &target);
-                epoch_loss += loss;
+                gpu::synchronize();
+                let t1 = Instant::now();
 
                 cross_entropy_backward(&logits, &target);
                 backward_graph(&logits);
+                gpu::synchronize();
+                let t2 = Instant::now();
+
                 optimizer.step(&trainable);
+                gpu::synchronize();
+                let t3 = Instant::now();
+
+                t_fwd += (t1 - t0).as_secs_f32();
+                t_bwd += (t2 - t1).as_secs_f32();
+                t_step += (t3 - t2).as_secs_f32();
+                epoch_loss += loss;
 
                 if b % 100 == 0 {
                     println!("  epoch {epoch} batch {b}/{nb} loss {loss:.4} ({:.1}s)", start.elapsed().as_secs_f32());
@@ -191,7 +206,10 @@ mod gpu_cnn {
 
             let avg = epoch_loss / nb as f32;
             let acc = evaluate(&test_images, &test_raw, &p, 500);
-            println!("Epoch {epoch} done: avg loss {avg:.4}, test acc {:.2}% ({:.1}s)", acc * 100.0, start.elapsed().as_secs_f32());
+            let secs = start.elapsed().as_secs_f32();
+            let imgs = 60000.0 / secs;
+            println!("Epoch {epoch} done: avg loss {avg:.4}, test acc {:.2}% ({secs:.1}s, {imgs:.0} img/s)", acc * 100.0);
+            println!("  phases: fwd {t_fwd:.2}s | bwd {t_bwd:.2}s | step {t_step:.2}s");
         }
 
         println!("Final evaluation on full test set...");
