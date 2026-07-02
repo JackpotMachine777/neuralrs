@@ -5,7 +5,9 @@
 //! variants that read one operand in transposed order (like a BLAS transa/transb
 //! flag): `matmul_nt` (B transposed) and `matmul_tn` (A transposed).
 //!
-//! Naive one-thread-per-output kernels for now, tiling is a later perf pass.
+//! Kernels are register-blocked: each 16x16 thread block computes a 64x64
+//! output tile, every thread a 4x4 patch accumulated in registers from
+//! shared-memory slabs of A and B.
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -17,42 +19,176 @@ use crate::cuda::backend;
 use crate::cuda::runtime::accumulate_into;
 
 const KERNEL: &str = r#"
+    // Tiled matmul: each 16x16 block cooperatively loads TILE-wide slabs of A
+    // and B into shared memory, then every thread accumulates its output element
+    // from the shared tiles. Global reads per output drop from 2*inner to
+    // 2*inner/TILE. TILE must match the block_dim set in mm() on the Rust side.
+    // Tiles are padded to TILE+1 columns so the transposed variants' column-order
+    // reads don't hit shared-memory bank conflicts.
+    #define TILE 16
+
+    // Register-blocked forward kernel: a 16x16 block computes a BMxBN output
+    // tile, each thread a TMxTN patch held in registers (16 FMAs per 8 shared
+    // loads). BM/BN must match the matmul_nn grid set in mm().
+    #define BM 64
+    #define BN 64
+    #define BK 16
+    #define TM 4
+    #define TN 4
+
     extern "C" __global__ void matmul_nn(float* C, const float* A, const float* B, int rows, int cols, int inner) {
-        int r = blockIdx.y * blockDim.y + threadIdx.y;
-        int c = blockIdx.x * blockDim.x + threadIdx.x;
+        __shared__ float As[BK][BM + 1];   // A tile stored transposed: As[k][m] (+1 pad: conflict-free stores)
+        __shared__ float Bs[BK][BN];       // B tile: Bs[k][n]
 
-        if(r < rows && c < cols) {
-            float acc = 0.0f;
-            for(int i = 0; i < inner; ++i) 
-                acc += A[r * inner + i] * B[i * cols + c];
+        int block_row = blockIdx.y * BM;
+        int block_col = blockIdx.x * BN;
+        int tid = threadIdx.y * blockDim.x + threadIdx.x;   // 0..255
 
-            C[r * cols + c] = acc;
+        int a_col = tid % BK;   // k of the A element this thread loads
+        int a_row = tid / BK;   // m of the A element (stepped by 16 below)
+        int b_col = tid % BN;   // n of the B element this thread loads
+        int b_row = tid / BN;   // k of the B element (stepped by 4 below)
+
+        float acc[TM][TN] = {};
+        float a_reg[TM];
+        float b_reg[TN];
+
+        for (int t = 0; t < inner; t += BK) {
+            for (int p = 0; p < BM; p += 256 / BK) {
+                int m = a_row + p;
+                int gr = block_row + m;
+                int gk = t + a_col;
+                As[a_col][m] = (gr < rows && gk < inner) ? A[gr * inner + gk] : 0.0f;
+            }
+            for (int p = 0; p < BK; p += 256 / BN) {
+                int k = b_row + p;
+                int gk = t + k;
+                int gc = block_col + b_col;
+                Bs[k][b_col] = (gk < inner && gc < cols) ? B[gk * cols + gc] : 0.0f;
+            }
+            __syncthreads();
+
+            for (int k = 0; k < BK; ++k) {
+                for (int i = 0; i < TM; ++i) a_reg[i] = As[k][threadIdx.y * TM + i];
+                for (int j = 0; j < TN; ++j) b_reg[j] = Bs[k][threadIdx.x * TN + j];
+                for (int i = 0; i < TM; ++i)
+                    for (int j = 0; j < TN; ++j)
+                        acc[i][j] += a_reg[i] * b_reg[j];
+            }
+            __syncthreads();
+        }
+
+        for (int i = 0; i < TM; ++i) {
+            int gr = block_row + threadIdx.y * TM + i;
+            if (gr >= rows) continue;
+            for (int j = 0; j < TN; ++j) {
+                int gc = block_col + threadIdx.x * TN + j;
+                if (gc < cols) C[gr * cols + gc] = acc[i][j];
+            }
         }
     }
 
     extern "C" __global__ void matmul_nt(float* C, const float* A, const float* B, int rows, int cols, int inner) {
-        int r = blockIdx.y * blockDim.y + threadIdx.y;
-        int c = blockIdx.x * blockDim.x + threadIdx.x;
+        __shared__ float As[BK][BM + 1];
+        __shared__ float Bs[BK][BN + 1];
 
-        if(r < rows && c < cols) {
-            float acc = 0.0f;
-            for(int i = 0; i < inner; ++i)
-                acc += A[r * inner + i] * B[c * inner + i];
+        int block_row = blockIdx.y * BM;
+        int block_col = blockIdx.x * BN;
+        int tid = threadIdx.y * blockDim.x + threadIdx.x;
 
-            C[r * cols + c] = acc;
+        int a_col = tid % BK;
+        int a_row = tid / BK;
+        int b_k   = tid % BK;
+        int b_c   = tid / BK;
+
+        float acc[TM][TN] = {};
+        float a_reg[TM];
+        float b_reg[TN];
+
+        for (int t = 0; t < inner; t += BK) {
+            for (int p = 0; p < BM; p += 256 / BK) {
+                int m = a_row + p;
+                int gr = block_row + m;
+                int gk = t + a_col;
+                As[a_col][m] = (gr < rows && gk < inner) ? A[gr * inner + gk] : 0.0f;
+            }
+            for (int p = 0; p < BN; p += 256 / BK) {
+                int n = b_c + p;
+                int gc = block_col + n;
+                int gk = t + b_k;
+                Bs[b_k][n] = (gc < cols && gk < inner) ? B[gc * inner + gk] : 0.0f;
+            }
+            __syncthreads();
+
+            for (int k = 0; k < BK; ++k) {
+                for (int i = 0; i < TM; ++i) a_reg[i] = As[k][threadIdx.y * TM + i];
+                for (int j = 0; j < TN; ++j) b_reg[j] = Bs[k][threadIdx.x * TN + j];
+                for (int i = 0; i < TM; ++i)
+                    for (int j = 0; j < TN; ++j)
+                        acc[i][j] += a_reg[i] * b_reg[j];
+            }
+            __syncthreads();
+        }
+
+        for (int i = 0; i < TM; ++i) {
+            int gr = block_row + threadIdx.y * TM + i;
+            if (gr >= rows) continue;
+            for (int j = 0; j < TN; ++j) {
+                int gc = block_col + threadIdx.x * TN + j;
+                if (gc < cols) C[gr * cols + gc] = acc[i][j];
+            }
         }
     }
 
     extern "C" __global__ void matmul_tn(float* C, const float* A, const float* B, int rows, int cols, int inner) {
-        int r = blockIdx.y * blockDim.y + threadIdx.y;
-        int c = blockIdx.x * blockDim.x + threadIdx.x;
+        __shared__ float As[BK][BM + 1];
+        __shared__ float Bs[BK][BN];
 
-        if (r < rows && c < cols) {
-            float acc = 0.0f;
-            for (int i = 0; i < inner; ++i) 
-                acc += A[i * rows + r] * B[i * cols + c];
-            
-            C[r * cols + c] = acc;
+        int block_row = blockIdx.y * BM;
+        int block_col = blockIdx.x * BN;
+        int tid = threadIdx.y * blockDim.x + threadIdx.x;
+
+        int a_m   = tid % BM;
+        int a_k   = tid / BM;
+        int b_col = tid % BN;
+        int b_row = tid / BN;
+
+        float acc[TM][TN] = {};
+        float a_reg[TM];
+        float b_reg[TN];
+
+        for (int t = 0; t < inner; t += BK) {
+            for (int p = 0; p < BK; p += 256 / BM) {
+                int k = a_k + p;
+                int gk = t + k;
+                int gm = block_row + a_m;
+                As[k][a_m] = (gk < inner && gm < rows) ? A[gk * rows + gm] : 0.0f;
+            }
+            for (int p = 0; p < BK; p += 256 / BN) {
+                int k = b_row + p;
+                int gk = t + k;
+                int gc = block_col + b_col;
+                Bs[k][b_col] = (gk < inner && gc < cols) ? B[gk * cols + gc] : 0.0f;
+            }
+            __syncthreads();
+
+            for (int k = 0; k < BK; ++k) {
+                for (int i = 0; i < TM; ++i) a_reg[i] = As[k][threadIdx.y * TM + i];
+                for (int j = 0; j < TN; ++j) b_reg[j] = Bs[k][threadIdx.x * TN + j];
+                for (int i = 0; i < TM; ++i)
+                    for (int j = 0; j < TN; ++j)
+                        acc[i][j] += a_reg[i] * b_reg[j];
+            }
+            __syncthreads();
+        }
+
+        for (int i = 0; i < TM; ++i) {
+            int gr = block_row + threadIdx.y * TM + i;
+            if (gr >= rows) continue;
+            for (int j = 0; j < TN; ++j) {
+                int gc = block_col + threadIdx.x * TN + j;
+                if (gc < cols) C[gr * cols + gc] = acc[i][j];
+            }
         }
     }
 "#;
@@ -63,11 +199,12 @@ fn mm(kernel: &str, a: &CudaSlice<f32>, b: &CudaSlice<f32>, rows: usize, cols: u
     let stream = backend::stream();
     let mut out = stream.alloc_zeros::<f32>(rows * cols).expect("cuda matmul: alloc failed");
 
-    const TILE: u32 = 16;
     let f = module().load_function(kernel).expect("matmul kernel not found");
+    // All variants are register-blocked: a 16x16 thread block computes a 64x64
+    // output tile, so the grid steps in 64s. Must match BM/BN in the kernels.
     let cfg = LaunchConfig {
-        grid_dim: ((cols as u32).div_ceil(TILE), (rows as u32).div_ceil(TILE), 1),
-        block_dim: (TILE, TILE, 1),
+        grid_dim: ((cols as u32).div_ceil(64), (rows as u32).div_ceil(64), 1),
+        block_dim: (16, 16, 1),
         shared_mem_bytes: 0,
     };
 
