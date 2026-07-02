@@ -1,11 +1,12 @@
 //! 2-D convolution on the GPU (resident autograd op).
 //!
-//! Direct convolution mirroring the CPU `Conv2d` layer (not im2col): input
-//! [N, c_in, in_h, in_w], weight [c_out, c_in, kh, kw], per-channel bias.
-//! Padding is handled by bounds-checking in the kernels (no padded copy).
-//! Backward is three gather kernels, one thread per output element each, so no
-//! atomics: d_input gathers over (oc,i,j), d_weight over (ni,oy,ox), d_bias sums
-//! the gradient over (ni,oy,ox).
+//! Forward is im2col + one GEMM: input patches are unrolled into a
+//! [c_in*kh*kw, N*out_h*out_w] matrix, so the whole batch is convolved by a
+//! single register-blocked matrix multiply against the [c_out, c_in*kh*kw]
+//! weights; a small epilogue kernel then reorders to NCHW and adds the bias.
+//! Backward is still direct gather kernels: d_input gathers over (oc,i,j),
+//! d_weight runs one thread per (weight, sample) accumulating with atomicAdd,
+//! d_bias sums the gradient over (ni,oy,ox).
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -15,36 +16,63 @@ use cudarc::driver::{CudaSlice, LaunchConfig, PushKernelArg};
 use crate::autograd::node::{GpuBuffers, Node};
 use crate::cuda::backend;
 use crate::cuda::runtime::accumulate_into;
+use crate::cuda::graph::matmul::mm;
 
 const KERNEL: &str = r#"
-    extern "C" __global__ void conv2d_forward(
-        float* out, const float* input, const float* weight, const float* bias,
+    // im2col: unrolls input patches into a [c_in*kh*kw, N*out_h*out_w] matrix,
+    // one thread per element. Columns are grouped by sample: column index is
+    // ni*(out_h*out_w) + oy*out_w + ox. Patch rows follow the weight layout
+    // ((ic*kh + i)*kw + j), so the [c_out, c_in*kh*kw] weight matrix multiplies
+    // the columns directly, no reshape needed.
+    extern "C" __global__ void conv2d_im2col(
+        float* cols, const float* input,
         int N, int c_in, int in_h, int in_w,
-        int c_out, int kh, int kw, int stride, int pad,
+        int kh, int kw, int stride, int pad,
         int out_h, int out_w
     ) {
         int idx = blockIdx.x * blockDim.x + threadIdx.x;
-        int total = N * c_out * out_h * out_w;
+        int col_w = out_h * out_w;
+        int width = N * col_w;
+        int col_h = c_in * kh * kw;
+        int total = col_h * width;
         if (idx >= total) return;
 
-        int ox = idx % out_w;
-        int oy = (idx / out_w) % out_h;
-        int oc = (idx / (out_w * out_h)) % c_out;
-        int ni = idx / (out_w * out_h * c_out);
+        int row  = idx / width;
+        int rest = idx % width;
+        int ni = rest / col_w;
+        int p  = rest % col_w;
+        int oy = p / out_w;
+        int ox = p % out_w;
 
-        float sum = bias[oc];
-        for (int ic = 0; ic < c_in; ++ic)
-            for (int i = 0; i < kh; ++i)
-                for (int j = 0; j < kw; ++j) {
-                    int iy = oy * stride + i - pad;
-                    int ix = ox * stride + j - pad;
-                    if (iy >= 0 && iy < in_h && ix >= 0 && ix < in_w) {
-                        int in_idx = ((ni * c_in + ic) * in_h + iy) * in_w + ix;
-                        int w_idx  = ((oc * c_in + ic) * kh + i) * kw + j;
-                        sum += input[in_idx] * weight[w_idx];
-                    }
-                }
-        out[idx] = sum;
+        int j  = row % kw;
+        int i  = (row / kw) % kh;
+        int ic = row / (kw * kh);
+
+        int iy = oy * stride + i - pad;
+        int ix = ox * stride + j - pad;
+
+        float v = 0.0f;
+        if (iy >= 0 && iy < in_h && ix >= 0 && ix < in_w)
+            v = input[((ni * c_in + ic) * in_h + iy) * in_w + ix];
+        cols[idx] = v;
+    }
+
+    // Epilogue after the GEMM: reorders the [c_out, N*out_h*out_w] product
+    // (columns grouped by sample) into NCHW and adds the per-channel bias.
+    extern "C" __global__ void conv2d_col2out(
+        float* out, const float* mm_out, const float* bias,
+        int N, int c_out, int out_h, int out_w
+    ) {
+        int idx = blockIdx.x * blockDim.x + threadIdx.x;
+        int col_w = out_h * out_w;
+        int total = N * c_out * col_w;
+        if (idx >= total) return;
+
+        int p  = idx % col_w;
+        int oc = (idx / col_w) % c_out;
+        int ni = idx / (col_w * c_out);
+
+        out[idx] = mm_out[oc * (N * col_w) + ni * col_w + p] + bias[oc];
     }
 
     extern "C" __global__ void conv2d_bias_grad(
@@ -141,6 +169,39 @@ struct Dims {
     out_h: usize, out_w: usize,
 }
 
+fn launch_im2col(input: &CudaSlice<f32>, d: Dims) -> CudaSlice<f32> {
+    let stream = backend::stream();
+    let col_h = d.c_in * d.kh * d.kw;
+    let width = d.n * d.out_h * d.out_w;
+    let mut cols = stream.alloc_zeros::<f32>(col_h * width).expect("conv2d im2col: alloc failed");
+    let f = module().load_function("conv2d_im2col").expect("conv2d_im2col not found");
+    let cfg = LaunchConfig::for_num_elems((col_h * width) as u32);
+    let (n, cin, ih, iw) = (d.n as i32, d.c_in as i32, d.in_h as i32, d.in_w as i32);
+    let (kh, kw, st, pd) = (d.kh as i32, d.kw as i32, d.stride as i32, d.pad as i32);
+    let (oh, ow) = (d.out_h as i32, d.out_w as i32);
+    let mut b = stream.launch_builder(&f);
+    b.arg(&mut cols); b.arg(input);
+    b.arg(&n); b.arg(&cin); b.arg(&ih); b.arg(&iw);
+    b.arg(&kh); b.arg(&kw); b.arg(&st); b.arg(&pd);
+    b.arg(&oh); b.arg(&ow);
+    unsafe { b.launch(cfg).expect("conv2d im2col: launch failed"); }
+    cols
+}
+
+fn launch_col2out(mm_out: &CudaSlice<f32>, bias: &CudaSlice<f32>, d: Dims) -> CudaSlice<f32> {
+    let stream = backend::stream();
+    let total = d.n * d.c_out * d.out_h * d.out_w;
+    let mut out = stream.alloc_zeros::<f32>(total).expect("conv2d col2out: alloc failed");
+    let f = module().load_function("conv2d_col2out").expect("conv2d_col2out not found");
+    let cfg = LaunchConfig::for_num_elems(total as u32);
+    let (n, co, oh, ow) = (d.n as i32, d.c_out as i32, d.out_h as i32, d.out_w as i32);
+    let mut b = stream.launch_builder(&f);
+    b.arg(&mut out); b.arg(mm_out); b.arg(bias);
+    b.arg(&n); b.arg(&co); b.arg(&oh); b.arg(&ow);
+    unsafe { b.launch(cfg).expect("conv2d col2out: launch failed"); }
+    out
+}
+
 fn launch_bias_grad(grad: &CudaSlice<f32>, d: Dims) -> CudaSlice<f32> {
     let stream = backend::stream();
     let mut out = stream.alloc_zeros::<f32>(d.c_out).expect("conv2d bgrad: alloc failed");
@@ -217,21 +278,17 @@ pub fn conv2d(
         let out_h = (in_h + 2 * pad - kh) / stride + 1;
         let out_w = (in_w + 2 * pad - kw) / stride + 1;
         let d = Dims { n, c_in, in_h, in_w, c_out, kh, kw, stride, pad, out_h, out_w };
-        let total = n * c_out * out_h * out_w;
-
-        let mut out = stream.alloc_zeros::<f32>(total).expect("cuda conv2d: alloc failed");
-
-        let f = module().load_function("conv2d_forward").expect("conv2d_forward not found");
-        let cfg = LaunchConfig::for_num_elems(total as u32);
-        let (ni, cin, ih, iw) = (n as i32, c_in as i32, in_h as i32, in_w as i32);
-        let (co, kh_i, kw_i, st, pd) = (c_out as i32, kh as i32, kw as i32, stride as i32, pad as i32);
-        let (oh, ow) = (out_h as i32, out_w as i32);
-        let mut b = stream.launch_builder(&f);
-        b.arg(&mut out); b.arg(&in_gpu.data); b.arg(&w_gpu.data); b.arg(&b_gpu.data);
-        b.arg(&ni); b.arg(&cin); b.arg(&ih); b.arg(&iw);
-        b.arg(&co); b.arg(&kh_i); b.arg(&kw_i); b.arg(&st); b.arg(&pd);
-        b.arg(&oh); b.arg(&ow);
-        unsafe { b.launch(cfg).expect("cuda conv2d: launch failed"); }
+        
+        let cols = launch_im2col(&in_gpu.data, d);
+        let mm_out = mm(
+            "matmul_nn",
+            &w_gpu.data,
+            &cols,
+            c_out,
+            n * out_h * out_w,
+            c_in * kh * kw,
+        );
+        let out = launch_col2out(&mm_out, &b_gpu.data, d);
 
         (out, d)
     };

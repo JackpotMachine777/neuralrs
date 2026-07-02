@@ -195,7 +195,9 @@ const KERNEL: &str = r#"
 
 crate::kernel_module!(KERNEL);
 
-fn mm(kernel: &str, a: &CudaSlice<f32>, b: &CudaSlice<f32>, rows: usize, cols: usize, inner: usize) -> CudaSlice<f32> {
+/// Raw device-level GEMM on slices, shared with ops that lower to a matrix
+/// multiply (conv2d's im2col path). `kernel` picks the variant by name.
+pub(crate) fn mm(kernel: &str, a: &CudaSlice<f32>, b: &CudaSlice<f32>, rows: usize, cols: usize, inner: usize) -> CudaSlice<f32> {
     let stream = backend::stream();
     let mut out = stream.alloc_zeros::<f32>(rows * cols).expect("cuda matmul: alloc failed");
 
