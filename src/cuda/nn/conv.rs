@@ -68,27 +68,30 @@ const KERNEL: &str = r#"
         int out_h, int out_w
     ) {
         int idx = blockIdx.x * blockDim.x + threadIdx.x;
-        int total = c_out * c_in * kh * kw;
+        int wsize = c_out * c_in * kh * kw;
+        int total = wsize * N;
         if (idx >= total) return;
 
-        int j  = idx % kw;
-        int i  = (idx / kw) % kh;
-        int ic = (idx / (kw * kh)) % c_in;
-        int oc = idx / (kw * kh * c_in);
+        int w  = idx % wsize;
+        int ni = idx / wsize;
+
+        int j  = w % kw;
+        int i  = (w / kw) % kh;
+        int ic = (w / (kw * kh)) % c_in;
+        int oc = w / (kw * kh * c_in);
 
         float acc = 0.0f;
-        for (int ni = 0; ni < N; ++ni)
-            for (int oy = 0; oy < out_h; ++oy)
-                for (int ox = 0; ox < out_w; ++ox) {
-                    int iy = oy * stride + i - pad;
-                    int ix = ox * stride + j - pad;
-                    if (iy >= 0 && iy < in_h && ix >= 0 && ix < in_w) {
-                        int g_idx  = ((ni * c_out + oc) * out_h + oy) * out_w + ox;
-                        int in_idx = ((ni * c_in + ic) * in_h + iy) * in_w + ix;
-                        acc += grad[g_idx] * input[in_idx];
-                    }
+        for (int oy = 0; oy < out_h; ++oy)
+            for (int ox = 0; ox < out_w; ++ox) {
+                int iy = oy * stride + i - pad;
+                int ix = ox * stride + j - pad;
+                if (iy >= 0 && iy < in_h && ix >= 0 && ix < in_w) {
+                    int g_idx  = ((ni * c_out + oc) * out_h + oy) * out_w + ox;
+                    int in_idx = ((ni * c_in + ic) * in_h + iy) * in_w + ix;
+                    acc += grad[g_idx] * input[in_idx];
                 }
-        dweight[idx] = acc;
+            }
+        atomicAdd(&dweight[w], acc);
     }
 
     extern "C" __global__ void conv2d_input_grad(
@@ -152,10 +155,10 @@ fn launch_bias_grad(grad: &CudaSlice<f32>, d: Dims) -> CudaSlice<f32> {
 
 fn launch_weight_grad(grad: &CudaSlice<f32>, input: &CudaSlice<f32>, d: Dims) -> CudaSlice<f32> {
     let stream = backend::stream();
-    let total = d.c_out * d.c_in * d.kh * d.kw;
-    let mut out = stream.alloc_zeros::<f32>(total).expect("conv2d wgrad: alloc failed");
+    let wsize = d.c_out * d.c_in * d.kh * d.kw;
+    let mut out = stream.alloc_zeros::<f32>(wsize).expect("conv2d wgrad: alloc failed");
     let f = module().load_function("conv2d_weight_grad").expect("conv2d_weight_grad not found");
-    let cfg = LaunchConfig::for_num_elems(total as u32);
+    let cfg = LaunchConfig::for_num_elems((wsize * d.n) as u32);  // one thread per (weight, sample)
     let (n, cin, ih, iw) = (d.n as i32, d.c_in as i32, d.in_h as i32, d.in_w as i32);
     let (co, kh, kw, st, pd) = (d.c_out as i32, d.kh as i32, d.kw as i32, d.stride as i32, d.pad as i32);
     let (oh, ow) = (d.out_h as i32, d.out_w as i32);

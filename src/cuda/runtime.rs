@@ -113,3 +113,10 @@ pub fn zero_grad(params: &[Rc<RefCell<Node>>]) {
         *gpu.grad.borrow_mut() = stream.alloc_zeros::<f32>(len).expect("zero_grad: alloc failed");
     }
 }
+
+/// Blocks until all queued GPU work on the stream has finished. Needed for
+/// honest timing, kernel launches are async, so without this you measure only
+/// the time to *queue* launches, not to execute them.
+pub fn synchronize() {
+    backend::stream().synchronize().expect("cuda synchronize failed");
+}
