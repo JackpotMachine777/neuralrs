@@ -175,6 +175,7 @@ mod gpu_cnn {
                 let target = Node::new(tgt_data, vec![bs, 10]);
                 gpu::to_cuda(&input);
                 gpu::to_cuda(&target);
+                input.borrow_mut().requires_grad = false;
 
                 gpu::zero_grad(&trainable);
 

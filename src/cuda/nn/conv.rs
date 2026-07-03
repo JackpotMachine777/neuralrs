@@ -122,10 +122,31 @@ const KERNEL: &str = r#"
         atomicAdd(&dweight[w], acc);
     }
 
-    extern "C" __global__ void conv2d_input_grad(
-        float* dinput, const float* grad, const float* weight,
+    // Backward epilogue inverse: reorders the NCHW output gradient into the
+    // [c_out, N*out_h*out_w] column-grouped layout the GEMMs consume.
+    extern "C" __global__ void conv2d_out2mm(
+        float* mm_grad, const float* grad,
+        int N, int c_out, int out_h, int out_w
+    ) {
+        int idx = blockIdx.x * blockDim.x + threadIdx.x;
+        int col_w = out_h * out_w;
+        int total = N * c_out * col_w;
+        if (idx >= total) return;
+
+        int p  = idx % col_w;
+        int oc = (idx / col_w) % c_out;
+        int ni = idx / (col_w * c_out);
+
+        mm_grad[oc * (N * col_w) + ni * col_w + p] = grad[idx];
+    }
+
+    // col2im: gathers the column-matrix gradient back onto input pixels. One
+    // thread per input element sums the dcols entry of every (i,j) kernel
+    // position that covered it, a gather, so no atomics.
+    extern "C" __global__ void conv2d_col2im(
+        float* dinput, const float* dcols,
         int N, int c_in, int in_h, int in_w,
-        int c_out, int kh, int kw, int stride, int pad,
+        int kh, int kw, int stride, int pad,
         int out_h, int out_w
     ) {
         int idx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -137,25 +158,26 @@ const KERNEL: &str = r#"
         int ic = (idx / (in_w * in_h)) % c_in;
         int ni = idx / (in_w * in_h * c_in);
 
+        int col_w = out_h * out_w;
+        int width = N * col_w;
+
         float acc = 0.0f;
-        for (int oc = 0; oc < c_out; ++oc)
-            for (int i = 0; i < kh; ++i) {
-                int oy_num = y + pad - i;
-                if (oy_num < 0 || oy_num % stride != 0) continue;
-                int oy = oy_num / stride;
-                if (oy >= out_h) continue;
+        for (int i = 0; i < kh; ++i) {
+            int oy_num = y + pad - i;
+            if (oy_num < 0 || oy_num % stride != 0) continue;
+            int oy = oy_num / stride;
+            if (oy >= out_h) continue;
 
-                for (int j = 0; j < kw; ++j) {
-                    int ox_num = x + pad - j;
-                    if (ox_num < 0 || ox_num % stride != 0) continue;
-                    int ox = ox_num / stride;
-                    if (ox >= out_w) continue;
+            for (int j = 0; j < kw; ++j) {
+                int ox_num = x + pad - j;
+                if (ox_num < 0 || ox_num % stride != 0) continue;
+                int ox = ox_num / stride;
+                if (ox >= out_w) continue;
 
-                    int g_idx = ((ni * c_out + oc) * out_h + oy) * out_w + ox;
-                    int w_idx = ((oc * c_in + ic) * kh + i) * kw + j;
-                    acc += grad[g_idx] * weight[w_idx];
-                }
+                int row = (ic * kh + i) * kw + j;
+                acc += dcols[row * width + ni * col_w + oy * out_w + ox];
             }
+        }
         dinput[idx] = acc;
     }
 "#;
@@ -232,21 +254,35 @@ fn launch_weight_grad(grad: &CudaSlice<f32>, input: &CudaSlice<f32>, d: Dims) ->
     out
 }
 
-fn launch_input_grad(grad: &CudaSlice<f32>, weight: &CudaSlice<f32>, d: Dims) -> CudaSlice<f32> {
+fn launch_out2mm(grad: &CudaSlice<f32>, d: Dims) -> CudaSlice<f32> {
+    let stream = backend::stream();
+    let width = d.n * d.out_h * d.out_w;
+    let mut out = stream.alloc_zeros::<f32>(d.c_out * width).expect("conv2d out2mm: alloc failed");
+    let f = module().load_function("conv2d_out2mm").expect("conv2d_out2mm not found");
+    let cfg = LaunchConfig::for_num_elems((d.c_out * width) as u32);
+    let (n, co, oh, ow) = (d.n as i32, d.c_out as i32, d.out_h as i32, d.out_w as i32);
+    let mut b = stream.launch_builder(&f);
+    b.arg(&mut out); b.arg(grad);
+    b.arg(&n); b.arg(&co); b.arg(&oh); b.arg(&ow);
+    unsafe { b.launch(cfg).expect("conv2d out2mm: launch failed"); }
+    out
+}
+
+fn launch_col2im(dcols: &CudaSlice<f32>, d: Dims) -> CudaSlice<f32> {
     let stream = backend::stream();
     let total = d.n * d.c_in * d.in_h * d.in_w;
-    let mut out = stream.alloc_zeros::<f32>(total).expect("conv2d igrad: alloc failed");
-    let f = module().load_function("conv2d_input_grad").expect("conv2d_input_grad not found");
+    let mut out = stream.alloc_zeros::<f32>(total).expect("conv2d col2im: alloc failed");
+    let f = module().load_function("conv2d_col2im").expect("conv2d_col2im not found");
     let cfg = LaunchConfig::for_num_elems(total as u32);
     let (n, cin, ih, iw) = (d.n as i32, d.c_in as i32, d.in_h as i32, d.in_w as i32);
-    let (co, kh, kw, st, pd) = (d.c_out as i32, d.kh as i32, d.kw as i32, d.stride as i32, d.pad as i32);
+    let (kh, kw, st, pd) = (d.kh as i32, d.kw as i32, d.stride as i32, d.pad as i32);
     let (oh, ow) = (d.out_h as i32, d.out_w as i32);
     let mut b = stream.launch_builder(&f);
-    b.arg(&mut out); b.arg(grad); b.arg(weight);
+    b.arg(&mut out); b.arg(dcols);
     b.arg(&n); b.arg(&cin); b.arg(&ih); b.arg(&iw);
-    b.arg(&co); b.arg(&kh); b.arg(&kw); b.arg(&st); b.arg(&pd);
+    b.arg(&kh); b.arg(&kw); b.arg(&st); b.arg(&pd);
     b.arg(&oh); b.arg(&ow);
-    unsafe { b.launch(cfg).expect("conv2d igrad: launch failed"); }
+    unsafe { b.launch(cfg).expect("conv2d col2im: launch failed"); }
     out
 }
 
@@ -278,7 +314,7 @@ pub fn conv2d(
         let out_h = (in_h + 2 * pad - kh) / stride + 1;
         let out_w = (in_w + 2 * pad - kw) / stride + 1;
         let d = Dims { n, c_in, in_h, in_w, c_out, kh, kw, stride, pad, out_h, out_w };
-        
+
         let cols = launch_im2col(&in_gpu.data, d);
         let mm_out = mm(
             "matmul_nn",
@@ -313,12 +349,23 @@ pub fn conv2d(
         node.backward_fn = Some(Box::new(move |_grad: &Vec<f32>| {
             let og = grad.borrow();
 
-            let di = {
-                let w = w_bwd.borrow();
-                let w_data = &w.gpu.as_ref().expect("conv2d bwd: weight not on GPU").data;
-                launch_input_grad(&og, w_data, d)
-            };
-            accumulate_into(&in_bwd, &Rc::new(RefCell::new(di)), in_len);
+            if in_bwd.borrow().requires_grad {
+                let mm_grad = launch_out2mm(&og, d);
+                let dcols = {
+                    let w = w_bwd.borrow();
+                    let w_data = &w.gpu.as_ref().expect("conv2d bwd: weight not on GPU").data;
+                    mm(
+                        "matmul_tn",
+                        w_data,
+                        &mm_grad,
+                        d.c_in * d.kh * d.kw,
+                        d.n * d.out_h * d.out_w,
+                        d.c_out,
+                    )
+                };
+                let di = launch_col2im(&dcols, d);
+                accumulate_into(&in_bwd, &Rc::new(RefCell::new(di)), in_len);
+            }
 
             let dw = {
                 let inp = in_bwd.borrow();

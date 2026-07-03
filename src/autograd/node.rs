@@ -31,12 +31,17 @@ use cudarc::driver::CudaSlice;
 ///   its parents. For addition it passes the gradient straight through; for
 ///   multiplication it scales by the other operand; and so on. This is the
 ///   chain rule, one node at a time.
+/// - `requires_grad` — whether gradients should flow *into* this node. Leaves
+///   that are pure inputs (like an image batch) can set this to `false` so ops
+///   skip computing a gradient nobody reads; currently honored by the CUDA
+///   conv2d input gradient.
 pub struct Node {
     pub data: Vec<f32>,
     pub grad: Vec<f32>,
     pub shape: Vec<usize>,
     pub parents: Vec<Rc<RefCell<Node>>>,
     pub backward_fn: Option<Box<dyn Fn(&Vec<f32>)>>,
+    pub requires_grad: bool,
     #[cfg(feature = "cuda")]
     pub gpu: Option<GpuBuffers>,
 }
@@ -62,6 +67,7 @@ impl Node {
             shape,
             parents: vec![],
             backward_fn: None,
+            requires_grad: true,
             #[cfg(feature = "cuda")]
             gpu: None,
         }))
