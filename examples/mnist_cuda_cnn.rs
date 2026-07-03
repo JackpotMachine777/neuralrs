@@ -34,6 +34,8 @@ mod gpu_cnn {
     }
 
     impl Params {
+        // Fan-ins are written as c_in * kh * kw even when c_in is 1.
+        #[allow(clippy::identity_op)]
         fn init() -> Self {
             Params {
                 c1w: Node::new(he::he(1 * 3 * 3, 16), vec![16, 1, 3, 3]),

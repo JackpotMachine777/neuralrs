@@ -1,6 +1,6 @@
+/// Where a tensor's data lives. `CUDA(i)` refers to the CUDA device at index
+/// `i`; the resident GPU backend currently always uses device 0.
 #[derive(Clone, Debug, PartialEq)]
-/// Where a tensor's data lives. CPU only for now (GPU support would be a future
-/// addition).
 pub enum Device {
     CPU,
     CUDA(usize),

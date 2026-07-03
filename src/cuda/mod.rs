@@ -10,6 +10,5 @@ mod reduce;
 pub mod graph;
 pub mod nn;
 pub mod runtime;
-pub mod matmul;         pub use matmul::{matmul, matmul_naive};
 pub mod loss;
 pub mod optim;

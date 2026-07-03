@@ -39,8 +39,8 @@ fn cuda_transpose() {
     let (b, r, c) = (2usize, 3usize, 4usize);
     let input: Vec<f32> = (0..b * r * c).map(|i| (i % 11) as f32 * 0.1 - 0.5).collect();
     let seed: Vec<f32> = (0..b * r * c).map(|i| (i % 7) as f32 * 0.1 + 0.2).collect();
-    let (cf, cg) = run_cpu_unary(&input, &[b, r, c], &seed, |x| cpu::transpose(x));
-    let (gf, gg) = run_gpu_unary(&input, &[b, r, c], &seed, |x| transpose(x));
+    let (cf, cg) = run_cpu_unary(&input, &[b, r, c], &seed, cpu::transpose);
+    let (gf, gg) = run_gpu_unary(&input, &[b, r, c], &seed, transpose);
     close(&gf, &cf, 1e-5, "transpose fwd");
     close(&gg, &cg, 1e-5, "transpose grad");
     println!("transpose: gpu matches cpu");
@@ -65,8 +65,8 @@ fn cuda_softmax() {
     let (rows, width) = (4usize, 5usize);
     let input: Vec<f32> = (0..rows * width).map(|i| (i % 9) as f32 * 0.3 - 1.0).collect();
     let seed: Vec<f32> = (0..rows * width).map(|i| (i % 7) as f32 * 0.1 + 0.2).collect();
-    let (cf, cg) = run_cpu_unary(&input, &[rows, width], &seed, |x| cpu::softmax(x));
-    let (gf, gg) = run_gpu_unary(&input, &[rows, width], &seed, |x| softmax(x));
+    let (cf, cg) = run_cpu_unary(&input, &[rows, width], &seed, cpu::softmax);
+    let (gf, gg) = run_gpu_unary(&input, &[rows, width], &seed, softmax);
     close(&gf, &cf, 1e-4, "softmax fwd");
     close(&gg, &cg, 1e-4, "softmax grad");
     println!("softmax: gpu matches cpu");

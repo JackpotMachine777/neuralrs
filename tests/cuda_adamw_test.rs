@@ -27,7 +27,7 @@ fn cuda_adamw_matches_cpu() {
     let mut gopt = AdamW::new(lr, b1, b2, eps, wd);
     for _ in 0..steps {
         gpu::set_grad(&gp, &grad);
-        gopt.step(&[gp.clone()]);
+        gopt.step(std::slice::from_ref(&gp));
     }
     let gpu_param = gpu::to_host(&gp);
 
