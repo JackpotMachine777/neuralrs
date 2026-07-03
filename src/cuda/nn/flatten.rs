@@ -7,7 +7,7 @@ use crate::autograd::node::Node;
 use crate::cuda::graph::reshape;
 
 /// Flattens `[N, ...]` to `[N, rest]`, keeps the batch dim, collapses the rest.
-/// Thin wrapper over [`reshape`].
+/// Thin wrapper over [`reshape()`].
 pub fn flatten(x: &Rc<RefCell<Node>>) -> Rc<RefCell<Node>> {
     let (n, rest) = {
         let xn = x.borrow();

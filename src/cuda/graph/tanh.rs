@@ -1,3 +1,5 @@
+//! Tanh (resident autograd op). Backward: grad * (1 - t*t), recomputed from the input.
+
 use std::cell::RefCell;
 use std::rc::Rc;
 use cudarc::driver::{LaunchConfig, PushKernelArg};
@@ -18,6 +20,7 @@ const KERNEL: &str = r#"
 "#;
 crate::kernel_module!(KERNEL);
 
+/// Tanh of a resident node, kept on the GPU.
 pub fn tanh(a: &Rc<RefCell<Node>>) -> Rc<RefCell<Node>> {
     let stream = backend::stream();
     let (out_data, shape, len) = {

@@ -1,6 +1,6 @@
 //! Matrix multiply on the GPU (resident autograd op): C = A @ B.
 //!
-//! C[m,n] = A[m,k] @ B[k,n], row-major. Backward: dA = dC @ Bᵀ, dB = Aᵀ @ dC.
+//! `C[m,n] = A[m,k] @ B[k,n]`, row-major. Backward: `dA = dC @ Bᵀ`, `dB = Aᵀ @ dC`.
 //! Rather than transposing into scratch buffers, the backward uses two kernel
 //! variants that read one operand in transposed order (like a BLAS transa/transb
 //! flag): `matmul_nt` (B transposed) and `matmul_tn` (A transposed).

@@ -1,3 +1,5 @@
+//! LeakyReLU (resident autograd op). Backward: grad where x > 0, alpha * grad elsewhere.
+
 use std::cell::RefCell;
 use std::rc::Rc;
 use cudarc::driver::{LaunchConfig, PushKernelArg};
@@ -18,6 +20,7 @@ const KERNEL: &str = r#"
 "#;
 crate::kernel_module!(KERNEL);
 
+/// LeakyReLU of a resident node with negative slope `alpha`, kept on the GPU.
 pub fn leaky_relu(a: &Rc<RefCell<Node>>, alpha: f32) -> Rc<RefCell<Node>> {
     let stream = backend::stream();
     let (out_data, shape, len) = {

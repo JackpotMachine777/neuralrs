@@ -1,3 +1,5 @@
+//! Elementwise power (resident autograd op). Backward: grad * alpha * x^(alpha - 1).
+
 use std::cell::RefCell;
 use std::rc::Rc;
 use cudarc::driver::{LaunchConfig, PushKernelArg};
@@ -18,6 +20,7 @@ const KERNEL: &str = r#"
 "#;
 crate::kernel_module!(KERNEL);
 
+/// Raises a resident node elementwise to the power `alpha`, kept on the GPU.
 pub fn pow(a: &Rc<RefCell<Node>>, alpha: f32) -> Rc<RefCell<Node>> {
     let stream = backend::stream();
     let (out_data, shape, len) = {

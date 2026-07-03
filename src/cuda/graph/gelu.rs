@@ -1,3 +1,6 @@
+//! GELU (resident autograd op), tanh approximation. Backward: the closed-form
+//! derivative of the same approximation, recomputed from the input.
+
 use std::cell::RefCell;
 use std::rc::Rc;
 use cudarc::driver::{LaunchConfig, PushKernelArg};
@@ -30,6 +33,7 @@ const KERNEL: &str = r#"
 "#;
 crate::kernel_module!(KERNEL);
 
+/// GELU (tanh approximation) of a resident node, kept on the GPU.
 pub fn gelu(a: &Rc<RefCell<Node>>) -> Rc<RefCell<Node>> {
     let stream = backend::stream();
     let (out_data, shape, len) = {

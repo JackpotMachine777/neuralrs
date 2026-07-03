@@ -1,3 +1,6 @@
+//! SiLU / swish (resident autograd op). Backward: grad * s * (1 + x*(1 - s))
+//! where s = sigmoid(x), recomputed from the input.
+
 use std::cell::RefCell;
 use std::rc::Rc;
 use cudarc::driver::{LaunchConfig, PushKernelArg};
@@ -18,6 +21,7 @@ const KERNEL: &str = r#"
 "#;
 crate::kernel_module!(KERNEL);
 
+/// SiLU (x * sigmoid(x)) of a resident node, kept on the GPU.
 pub fn silu(a: &Rc<RefCell<Node>>) -> Rc<RefCell<Node>> {
     let stream = backend::stream();
     let (out_data, shape, len) = {
