@@ -148,7 +148,7 @@ mod gpu_cnn {
         let test_raw = read_labels_raw("data/mnist/t10k-labels-idx1-ubyte");
         println!("Loaded {n_train} training images");
 
-        let batch_size = 32;
+        let batch_size = 128;
         let mut loader = DataLoader::new(train_images, train_labels, batch_size);
         loader.set_augment(Box::new(shift_image));
 
