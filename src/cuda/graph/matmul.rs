@@ -191,6 +191,69 @@ const KERNEL: &str = r#"
             }
         }
     }
+
+    // Split-K variant of matmul_nt for skinny outputs with a huge inner
+    // dimension (the conv weight-gradient shape: [c_out, c_in*kh*kw] reduced
+    // over N*out_h*out_w). blockIdx.z slices the inner dimension so enough
+    // blocks exist to fill the GPU despite the tiny output tile count; each
+    // slice accumulates its partial tile with atomicAdd, so C must be
+    // zero-initialized. Loads are guarded with k_end, not inner, so slices
+    // never overlap.
+    extern "C" __global__ void matmul_nt_splitk(float* C, const float* A, const float* B, int rows, int cols, int inner) {
+        __shared__ float As[BK][BM + 1];
+        __shared__ float Bs[BK][BN + 1];
+
+        int block_row = blockIdx.y * BM;
+        int block_col = blockIdx.x * BN;
+        int tid = threadIdx.y * blockDim.x + threadIdx.x;
+
+        int a_col = tid % BK;
+        int a_row = tid / BK;
+        int b_k   = tid % BK;
+        int b_c   = tid / BK;
+
+        int per = (inner + gridDim.z - 1) / gridDim.z;
+        int k_begin = blockIdx.z * per;
+        int k_end = min(k_begin + per, inner);
+
+        float acc[TM][TN] = {};
+        float a_reg[TM];
+        float b_reg[TN];
+
+        for (int t = k_begin; t < k_end; t += BK) {
+            for (int p = 0; p < BM; p += 256 / BK) {
+                int m = a_row + p;
+                int gr = block_row + m;
+                int gk = t + a_col;
+                As[a_col][m] = (gr < rows && gk < k_end) ? A[gr * inner + gk] : 0.0f;
+            }
+            for (int p = 0; p < BN; p += 256 / BK) {
+                int n = b_c + p;
+                int gc = block_col + n;
+                int gk = t + b_k;
+                Bs[b_k][n] = (gc < cols && gk < k_end) ? B[gc * inner + gk] : 0.0f;
+            }
+            __syncthreads();
+
+            for (int k = 0; k < BK; ++k) {
+                for (int i = 0; i < TM; ++i) a_reg[i] = As[k][threadIdx.y * TM + i];
+                for (int j = 0; j < TN; ++j) b_reg[j] = Bs[k][threadIdx.x * TN + j];
+                for (int i = 0; i < TM; ++i)
+                    for (int j = 0; j < TN; ++j)
+                        acc[i][j] += a_reg[i] * b_reg[j];
+            }
+            __syncthreads();
+        }
+
+        for (int i = 0; i < TM; ++i) {
+            int gr = block_row + threadIdx.y * TM + i;
+            if (gr >= rows) continue;
+            for (int j = 0; j < TN; ++j) {
+                int gc = block_col + threadIdx.x * TN + j;
+                if (gc < cols) atomicAdd(&C[gr * cols + gc], acc[i][j]);
+            }
+        }
+    }
 "#;
 
 crate::kernel_module!(KERNEL);
@@ -206,6 +269,37 @@ pub(crate) fn mm(kernel: &str, a: &CudaSlice<f32>, b: &CudaSlice<f32>, rows: usi
     // output tile, so the grid steps in 64s. Must match BM/BN in the kernels.
     let cfg = LaunchConfig {
         grid_dim: ((cols as u32).div_ceil(64), (rows as u32).div_ceil(64), 1),
+        block_dim: (16, 16, 1),
+        shared_mem_bytes: 0,
+    };
+
+    let (r, c, i) = (rows as i32, cols as i32, inner as i32);
+    let mut builder = stream.launch_builder(&f);
+    builder.arg(&mut out);
+    builder.arg(a);
+    builder.arg(b);
+    builder.arg(&r);
+    builder.arg(&c);
+    builder.arg(&i);
+    unsafe { builder.launch(cfg).expect("cuda matmul: launch failed"); }
+
+    out
+}
+
+/// Split-K GEMM for skinny outputs with a huge inner dimension (the conv
+/// weight-gradient shape). Slices `inner` across `grid.z` so enough blocks
+/// exist to fill the GPU; the kernel accumulates partial tiles with atomicAdd
+/// into the zero-initialized output.
+pub(crate) fn mm_nt_splitk(a: &CudaSlice<f32>, b: &CudaSlice<f32>, rows: usize, cols: usize, inner: usize) -> CudaSlice<f32> {
+    let stream = backend::stream();
+    let mut out = stream.alloc_zeros::<f32>(rows * cols).expect("cuda matmul: alloc failed");
+
+    let f = module().load_function("matmul_nt_splitk").expect("matmul kernel not found");
+    let base = (cols as u32).div_ceil(64) * (rows as u32).div_ceil(64);
+    let max_slices = (inner as u32).div_ceil(16).max(1);
+    let grid_z = (128 / base).clamp(1, 64).min(max_slices);
+    let cfg = LaunchConfig {
+        grid_dim: ((cols as u32).div_ceil(64), (rows as u32).div_ceil(64), grid_z),
         block_dim: (16, 16, 1),
         shared_mem_bytes: 0,
     };

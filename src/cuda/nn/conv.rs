@@ -16,7 +16,7 @@ use cudarc::driver::{CudaSlice, LaunchConfig, PushKernelArg};
 use crate::autograd::node::{GpuBuffers, Node};
 use crate::cuda::backend;
 use crate::cuda::runtime::accumulate_into;
-use crate::cuda::graph::matmul::mm;
+use crate::cuda::graph::matmul::{mm, mm_nt_splitk};
 
 const KERNEL: &str = r#"
     // im2col: unrolls input patches into a [c_in*kh*kw, N*out_h*out_w] matrix,
@@ -87,39 +87,6 @@ const KERNEL: &str = r#"
                 for (int ox = 0; ox < out_w; ++ox)
                     acc += grad[((ni * c_out + oc) * out_h + oy) * out_w + ox];
         dbias[oc] = acc;
-    }
-
-    extern "C" __global__ void conv2d_weight_grad(
-        float* dweight, const float* grad, const float* input,
-        int N, int c_in, int in_h, int in_w,
-        int c_out, int kh, int kw, int stride, int pad,
-        int out_h, int out_w
-    ) {
-        int idx = blockIdx.x * blockDim.x + threadIdx.x;
-        int wsize = c_out * c_in * kh * kw;
-        int total = wsize * N;
-        if (idx >= total) return;
-
-        int w  = idx % wsize;
-        int ni = idx / wsize;
-
-        int j  = w % kw;
-        int i  = (w / kw) % kh;
-        int ic = (w / (kw * kh)) % c_in;
-        int oc = w / (kw * kh * c_in);
-
-        float acc = 0.0f;
-        for (int oy = 0; oy < out_h; ++oy)
-            for (int ox = 0; ox < out_w; ++ox) {
-                int iy = oy * stride + i - pad;
-                int ix = ox * stride + j - pad;
-                if (iy >= 0 && iy < in_h && ix >= 0 && ix < in_w) {
-                    int g_idx  = ((ni * c_out + oc) * out_h + oy) * out_w + ox;
-                    int in_idx = ((ni * c_in + ic) * in_h + iy) * in_w + ix;
-                    acc += grad[g_idx] * input[in_idx];
-                }
-            }
-        atomicAdd(&dweight[w], acc);
     }
 
     // Backward epilogue inverse: reorders the NCHW output gradient into the
@@ -236,24 +203,6 @@ fn launch_bias_grad(grad: &CudaSlice<f32>, d: Dims) -> CudaSlice<f32> {
     out
 }
 
-fn launch_weight_grad(grad: &CudaSlice<f32>, input: &CudaSlice<f32>, d: Dims) -> CudaSlice<f32> {
-    let stream = backend::stream();
-    let wsize = d.c_out * d.c_in * d.kh * d.kw;
-    let mut out = stream.alloc_zeros::<f32>(wsize).expect("conv2d wgrad: alloc failed");
-    let f = module().load_function("conv2d_weight_grad").expect("conv2d_weight_grad not found");
-    let cfg = LaunchConfig::for_num_elems((wsize * d.n) as u32);  // one thread per (weight, sample)
-    let (n, cin, ih, iw) = (d.n as i32, d.c_in as i32, d.in_h as i32, d.in_w as i32);
-    let (co, kh, kw, st, pd) = (d.c_out as i32, d.kh as i32, d.kw as i32, d.stride as i32, d.pad as i32);
-    let (oh, ow) = (d.out_h as i32, d.out_w as i32);
-    let mut b = stream.launch_builder(&f);
-    b.arg(&mut out); b.arg(grad); b.arg(input);
-    b.arg(&n); b.arg(&cin); b.arg(&ih); b.arg(&iw);
-    b.arg(&co); b.arg(&kh); b.arg(&kw); b.arg(&st); b.arg(&pd);
-    b.arg(&oh); b.arg(&ow);
-    unsafe { b.launch(cfg).expect("conv2d wgrad: launch failed"); }
-    out
-}
-
 fn launch_out2mm(grad: &CudaSlice<f32>, d: Dims) -> CudaSlice<f32> {
     let stream = backend::stream();
     let width = d.n * d.out_h * d.out_w;
@@ -348,20 +297,15 @@ pub fn conv2d(
 
         node.backward_fn = Some(Box::new(move |_grad: &Vec<f32>| {
             let og = grad.borrow();
+            let mm_grad = launch_out2mm(&og, d);
+            let col_h = d.c_in * d.kh * d.kw;
+            let width = d.n * d.out_h * d.out_w;
 
             if in_bwd.borrow().requires_grad {
-                let mm_grad = launch_out2mm(&og, d);
                 let dcols = {
                     let w = w_bwd.borrow();
                     let w_data = &w.gpu.as_ref().expect("conv2d bwd: weight not on GPU").data;
-                    mm(
-                        "matmul_tn",
-                        w_data,
-                        &mm_grad,
-                        d.c_in * d.kh * d.kw,
-                        d.n * d.out_h * d.out_w,
-                        d.c_out,
-                    )
+                    mm("matmul_tn", w_data, &mm_grad, col_h, width, d.c_out)
                 };
                 let di = launch_col2im(&dcols, d);
                 accumulate_into(&in_bwd, &Rc::new(RefCell::new(di)), in_len);
@@ -370,7 +314,8 @@ pub fn conv2d(
             let dw = {
                 let inp = in_bwd.borrow();
                 let in_data = &inp.gpu.as_ref().expect("conv2d bwd: input not on GPU").data;
-                launch_weight_grad(&og, in_data, d)
+                let cols = launch_im2col(in_data, d);
+                mm_nt_splitk(&mm_grad, &cols, d.c_out, col_h, width)
             };
             accumulate_into(&w_bwd, &Rc::new(RefCell::new(dw)), w_len);
 
