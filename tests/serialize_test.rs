@@ -1,6 +1,6 @@
 use neuralrs::tensor::Tensor;
 use neuralrs::nn::linear::Linear;
-use neuralrs::serialize::{save_linear, load_linear};
+use neuralrs::serialize::{save_linear, load_linear, save_tensors, load_tensors};
 
 #[test]
 fn save_load_linear_test() {
@@ -25,4 +25,18 @@ fn save_load_linear_test() {
     println!("original weights: {:?}", original.weights.storage.data);
     println!("loaded weights:   {:?}", loaded.weights.storage.data);
     println!("save/load ok");
+}
+
+#[test]
+fn save_load_tensors_roundtrip() {
+    let a = vec![1.5f32, -2.25, 0.0, 3.75];
+    let b = vec![0.125f32; 7];
+    let path = "/tmp/test_tensors.txt";
+
+    save_tensors(&[a.as_slice(), b.as_slice()], path);
+    let loaded = load_tensors(path);
+
+    assert_eq!(loaded.len(), 2);
+    assert_eq!(loaded[0], a);
+    assert_eq!(loaded[1], b);
 }

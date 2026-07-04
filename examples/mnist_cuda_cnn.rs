@@ -18,6 +18,7 @@ mod gpu_cnn {
     use neuralrs::data::dataloader::DataLoader;
     use neuralrs::data::mnist::{read_images, read_labels, read_labels_raw};
     use neuralrs::init::he;
+    use neuralrs::serialize;
 
     use std::cell::RefCell;
     use std::rc::Rc;
@@ -55,13 +56,19 @@ mod gpu_cnn {
             }
         }
 
-        /// Move every parameter (including BN running stats) to the device once.
-        fn to_device(&self) {
-            for p in [
+        /// Every parameter in a fixed order — the checkpoint file format
+        /// depends on this order staying stable.
+        fn all(&self) -> [&N; 14] {
+            [
                 &self.c1w, &self.c1b, &self.c2w, &self.c2b, &self.c3w, &self.c3b,
                 &self.l1w, &self.l1b, &self.bg, &self.bb, &self.brm, &self.brv,
                 &self.l2w, &self.l2b,
-            ] {
+            ]
+        }
+
+        /// Move every parameter (including BN running stats) to the device once.
+        fn to_device(&self) {
+            for p in self.all() {
                 gpu::to_cuda(p);
             }
         }
@@ -142,6 +149,27 @@ mod gpu_cnn {
         correct as f32 / n as f32
     }
 
+   /// Saves every parameter (including BN running stats) to a checkpoint,
+    /// downloading each from the device first. Atomic — see `save_tensors`.
+    fn save_checkpoint(p: &Params, path: &str) {
+        let host: Vec<Vec<f32>> = p.all().iter().map(|n| gpu::to_host(n)).collect();
+        let refs: Vec<&[f32]> = host.iter().map(|v| v.as_slice()).collect();
+        serialize::save_tensors(&refs, path);
+    }
+
+    /// Loads a checkpoint into freshly built params. Call before `to_device`
+    /// — it fills the host-side buffers, which the upload then carries over.
+    fn load_checkpoint(p: &Params, path: &str) {
+        let loaded = serialize::load_tensors(path);
+        let nodes = p.all();
+        assert_eq!(nodes.len(), loaded.len(), "checkpoint tensor count != model");
+        for (node, data) in nodes.iter().zip(loaded) {
+            let mut n = node.borrow_mut();
+            assert_eq!(data.len(), n.data.len(), "checkpoint tensor size != model");
+            n.data.copy_from_slice(&data);
+        }
+    }
+
     pub fn run() {
         println!("Loading MNIST...");
         let (train_images, n_train, _, _) = read_images("data/mnist/train-images-idx3-ubyte");
@@ -150,11 +178,16 @@ mod gpu_cnn {
         let test_raw = read_labels_raw("data/mnist/t10k-labels-idx1-ubyte");
         println!("Loaded {n_train} training images");
 
-        let batch_size = 128;
+        let batch_size = 32;
         let mut loader = DataLoader::new(train_images, train_labels, batch_size);
         loader.set_augment(Box::new(shift_image));
 
+        let ckpt = "mnist_cnn_checkpoint.txt";
         let p = Params::init();
+        if std::path::Path::new(ckpt).exists() {
+            load_checkpoint(&p, ckpt);
+            println!("Resumed from {ckpt}");
+        }
         p.to_device();
         let trainable = p.trainable();
 
@@ -167,7 +200,6 @@ mod gpu_cnn {
             loader.shuffle();
             let nb = loader.num_batches();
             let mut epoch_loss = 0.0;
-            let (mut t_fwd, mut t_bwd, mut t_step) = (0.0f32, 0.0f32, 0.0f32);
             let start = Instant::now();
 
             for b in 0..nb {
@@ -177,30 +209,16 @@ mod gpu_cnn {
                 let target = Node::new(tgt_data, vec![bs, 10]);
                 gpu::to_cuda(&input);
                 gpu::to_cuda(&target);
-                input.borrow_mut().requires_grad = false;
+                input.borrow_mut().requires_grad = false;   // image batch is a pure input: skip its gradient
 
                 gpu::zero_grad(&trainable);
-
-                gpu::synchronize();
-                let t0 = Instant::now();
                 let logits = forward(&input, &p, true);
                 let loss = cross_entropy(&logits, &target);
-                gpu::synchronize();
-                let t1 = Instant::now();
+                epoch_loss += loss;
 
                 cross_entropy_backward(&logits, &target);
                 backward_graph(&logits);
-                gpu::synchronize();
-                let t2 = Instant::now();
-
                 optimizer.step(&trainable);
-                gpu::synchronize();
-                let t3 = Instant::now();
-
-                t_fwd += (t1 - t0).as_secs_f32();
-                t_bwd += (t2 - t1).as_secs_f32();
-                t_step += (t3 - t2).as_secs_f32();
-                epoch_loss += loss;
 
                 if b % 100 == 0 {
                     println!("  epoch {epoch} batch {b}/{nb} loss {loss:.4} ({:.1}s)", start.elapsed().as_secs_f32());
@@ -209,10 +227,8 @@ mod gpu_cnn {
 
             let avg = epoch_loss / nb as f32;
             let acc = evaluate(&test_images, &test_raw, &p, 500);
-            let secs = start.elapsed().as_secs_f32();
-            let imgs = 60000.0 / secs;
-            println!("Epoch {epoch} done: avg loss {avg:.4}, test acc {:.2}% ({secs:.1}s, {imgs:.0} img/s)", acc * 100.0);
-            println!("  phases: fwd {t_fwd:.2}s | bwd {t_bwd:.2}s | step {t_step:.2}s");
+            println!("Epoch {epoch} done: avg loss {avg:.4}, test acc {:.2}% ({:.1}s)", acc * 100.0, start.elapsed().as_secs_f32());
+            save_checkpoint(&p, ckpt);
         }
 
         println!("Final evaluation on full test set...");
