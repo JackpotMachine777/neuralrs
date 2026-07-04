@@ -56,7 +56,7 @@ mod gpu_cnn {
             }
         }
 
-        /// Every parameter in a fixed order — the checkpoint file format
+        /// Every parameter in a fixed order, the checkpoint file format
         /// depends on this order staying stable.
         fn all(&self) -> [&N; 14] {
             [
@@ -150,15 +150,15 @@ mod gpu_cnn {
     }
 
    /// Saves every parameter (including BN running stats) to a checkpoint,
-    /// downloading each from the device first. Atomic — see `save_tensors`.
+    /// downloading each from the device first. Atomic, see `save_tensors`.
     fn save_checkpoint(p: &Params, path: &str) {
         let host: Vec<Vec<f32>> = p.all().iter().map(|n| gpu::to_host(n)).collect();
         let refs: Vec<&[f32]> = host.iter().map(|v| v.as_slice()).collect();
         serialize::save_tensors(&refs, path);
     }
 
-    /// Loads a checkpoint into freshly built params. Call before `to_device`
-    /// — it fills the host-side buffers, which the upload then carries over.
+    /// Loads a checkpoint into freshly built params. Call before `to_device`,
+    /// it fills the host-side buffers, which the upload then carries over.
     fn load_checkpoint(p: &Params, path: &str) {
         let loaded = serialize::load_tensors(path);
         let nodes = p.all();

@@ -76,7 +76,7 @@ pub fn load_linear(path: &str) -> Linear {
 ///
 /// The data is first written to `<path>.tmp` and atomically renamed into
 /// place, so an interrupted save (Ctrl-C, crash) can never leave a truncated
-/// checkpoint behind — the previous one stays intact.
+/// checkpoint behind, the previous one stays intact.
 pub fn save_tensors(tensors: &[&[f32]], path: &str) {
     let tmp = format!("{path}.tmp");
     {
@@ -96,7 +96,7 @@ pub fn save_tensors(tensors: &[&[f32]], path: &str) {
 }
 
 /// Loads tensors from a checkpoint written by [`save_tensors`] (or by
-/// [`save_model`] — the formats are identical).
+/// [`save_model`], the formats are identical).
 ///
 /// Returns the tensors in file order; the caller is responsible for checking
 /// that counts and lengths match its model.
@@ -138,7 +138,7 @@ pub fn load_tensors(path: &str) -> Vec<Vec<f32>> {
 ///
 /// Walks the model's `parameters()` and writes them out through
 /// [`save_tensors`], so training can be resumed or the trained weights reused
-/// later. The write is buffered and atomic — see [`save_tensors`].
+/// later. The write is buffered and atomic, see [`save_tensors`].
 pub fn save_model<M: Module>(model: &mut M, path: &str) {
     let params = model.parameters();
     let refs: Vec<&[f32]> = params.iter().map(|p| p.storage.data.as_slice()).collect();

@@ -1,8 +1,8 @@
 # NeuralRs
 
-A deep learning library written from scratch in Rust, with its own autograd engine, a full neural network stack, and a working Transformer. Not a toy: it trains real models, every layer's gradient is numerically verified, and it reaches **99.44% on MNIST**, **99.52% when the same CNN trains entirely on the GPU** through the resident CUDA backend.
+A deep learning library written from scratch in Rust, with its own autograd engine, a full neural network stack, and a working Transformer. Not a toy: it trains real models, every layer's gradient is numerically verified, and it reaches **99.44% on MNIST**, **99.43% when the same CNN trains entirely on the GPU** through the resident CUDA backend.
 
-NeuralRs mirrors the design of PyTorch (tensors, autograd, `nn` modules, optimizers) but is built end-to-end in Rust with minimal dependencies. The goal is a framework that is both **complete enough to be useful** and **readable enough to learn from**, if you've ever wanted to see how a deep learning framework actually works under the hood, the source is meant to be read.
+NeuralRs mirrors the design of PyTorch (tensors, autograd, `nn` modules, optimizers) but is built end-to-end in Rust with minimal dependencies. The goal is a framework that is both **complete enough to be useful** and **readable enough to learn from**. If you've ever wanted to see how a deep learning framework actually works under the hood, the source is meant to be read.
 
 ## Why NeuralRs?
 
@@ -49,7 +49,7 @@ NeuralRs mirrors the design of PyTorch (tensors, autograd, `nn` modules, optimiz
 
 **Utilities**
 - `DataLoader` with shuffling and data augmentation
-- Model save / load
+- Model save / load, plus atomic tensor checkpointing for resumable training
 - Cross-entropy (with built-in stable log-softmax) and MSE losses
 
 ## Quick start
@@ -130,7 +130,7 @@ The `cuda` feature enables a complete resident GPU backend. Models train
 end-to-end on the device: parameters are uploaded once, every op keeps its
 data and gradients in VRAM, and the optimizers hold device-side state.
 Kernels are hand-written CUDA C, compiled at runtime by NVRTC through
-[`cudarc`](https://crates.io/crates/cudarc), there is no `nvcc` or `.cu`
+[`cudarc`](https://crates.io/crates/cudarc); there is no `nvcc` or `.cu`
 build step, so a CUDA driver and toolkit are the only requirements.
 
 ```bash
@@ -138,7 +138,10 @@ build step, so a CUDA driver and toolkit are the only requirements.
 cargo run --release --features cuda --example mnist_cuda_cnn
 ```
 
-GPU API docs build locally with `cargo doc --features cuda --open`,
+The flagship also checkpoints every epoch and resumes automatically, so
+training can be interrupted and picked back up.
+
+GPU API docs build locally with `cargo doc --features cuda --open`;
 docs.rs builds without a CUDA toolkit, so the `cuda` module doesn't appear
 there.
 
@@ -153,22 +156,25 @@ On MNIST (28×28 grayscale, 10 classes):
 | 2-conv CNN (8→16) | AdamW, WarmupCosine, 25 epochs | 99.39% |
 | 2-conv CNN (8→16) | AdamW, 25 epochs | 99.29% |
 
-The GPU flagship trains at ~19k images/s (batch 32) on an RTX 5060 Ti, the full 25-epoch run takes about 90 seconds.
+The GPU flagship trains at ~19k images/s (batch 32) on an RTX 5060 Ti; the
+full 25-epoch run takes about 90 seconds. Batch 128 trains roughly 40%
+faster and lands the same final accuracy.
 
 ## Project status
 
-NeuralRs is an actively developed personal project. The full training stack works today, CNNs, RNNs, and Transformers all train and their gradients are verified. Contributions, issues, and ideas are welcome.
+NeuralRs is an actively developed personal project. The full training stack works today: CNNs, RNNs, and Transformers all train and their gradients are verified. Contributions, issues, and ideas are welcome.
 
 ### Roadmap
 
 - [x] CUDA / GPU backend, fully resident, near-complete parity (v0.2.0)
 - [ ] cuBLAS behind a feature flag (own kernels stay the default)
 - [ ] GPU twins for the spatial layers (`BatchNorm2d`, `Dropout2d`)
+- [ ] Optimizer-state checkpointing (resume with Adam moments intact)
 - [ ] Expanded documentation
 
 ## Design philosophy
 
-The core is 100% hand-written Rust, the autograd engine and the math that makes a deep learning framework a deep learning framework. Performance shortcuts that don't belong to that core (like a BLAS backend) are optional and opt-in, never the default. The point is to own the important parts, not to wrap someone else's library. The GPU backend follows the same rule: every kernel is hand-written CUDA C, `cudarc` supplies the driver bindings, not the math.
+The core is 100% hand-written Rust: the autograd engine and the math that makes a deep learning framework a deep learning framework. Performance shortcuts that don't belong to that core (like a BLAS backend) are optional and opt-in, never the default. The point is to own the important parts, not to wrap someone else's library. The GPU backend follows the same rule: every kernel is hand-written CUDA C; `cudarc` supplies the driver bindings, not the math.
 
 ## License
 
