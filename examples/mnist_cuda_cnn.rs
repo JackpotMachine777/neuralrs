@@ -149,24 +149,36 @@ mod gpu_cnn {
         correct as f32 / n as f32
     }
 
-   /// Saves every parameter (including BN running stats) to a checkpoint,
-    /// downloading each from the device first. Atomic, see `save_tensors`.
-    fn save_checkpoint(p: &Params, path: &str) {
-        let host: Vec<Vec<f32>> = p.all().iter().map(|n| gpu::to_host(n)).collect();
+    /// Saves every parameter (including BN running stats) plus the optimizer
+    /// state to a checkpoint, downloading everything from the device first.
+    /// Layout: 14 parameter tensors, then [t], then the AdamW moments (all
+    /// m's, then all v's). Atomic, see `save_tensors`.
+    fn save_checkpoint(p: &Params, optimizer: &AdamW, path: &str) {
+        let mut host: Vec<Vec<f32>> = p.all().iter().map(|n| gpu::to_host(n)).collect();
+        let (t, moments) = optimizer.export_state();
+        host.push(vec![t as f32]);   // exact for t < 2^24, far beyond any run here
+        host.extend(moments);
         let refs: Vec<&[f32]> = host.iter().map(|v| v.as_slice()).collect();
         serialize::save_tensors(&refs, path);
     }
 
-    /// Loads a checkpoint into freshly built params. Call before `to_device`,
-    /// it fills the host-side buffers, which the upload then carries over.
-    fn load_checkpoint(p: &Params, path: &str) {
+    /// Loads a checkpoint into freshly built params and, when present, the
+    /// optimizer state. Parameter-only checkpoints (the old layout) still
+    /// load, the optimizer then just starts with fresh moments. Call before
+    /// `to_device`.
+    fn load_checkpoint(p: &Params, optimizer: &mut AdamW, path: &str) {
         let loaded = serialize::load_tensors(path);
         let nodes = p.all();
-        assert_eq!(nodes.len(), loaded.len(), "checkpoint tensor count != model");
-        for (node, data) in nodes.iter().zip(loaded) {
+        assert!(loaded.len() >= nodes.len(), "checkpoint has fewer tensors than the model");
+        for (node, data) in nodes.iter().zip(&loaded) {
             let mut n = node.borrow_mut();
             assert_eq!(data.len(), n.data.len(), "checkpoint tensor size != model");
-            n.data.copy_from_slice(&data);
+            n.data.copy_from_slice(data);
+        }
+        if loaded.len() > nodes.len() {
+            let t = loaded[nodes.len()][0] as usize;
+            optimizer.import_state(t, &loaded[nodes.len() + 1..]);
+            println!("Restored optimizer state (t = {t})");
         }
     }
 
@@ -184,14 +196,13 @@ mod gpu_cnn {
 
         let ckpt = "mnist_cnn_checkpoint.txt";
         let p = Params::init();
+        let mut optimizer = AdamW::new(0.001, 0.9, 0.999, 1e-8, 1e-4);
         if std::path::Path::new(ckpt).exists() {
-            load_checkpoint(&p, ckpt);
+            load_checkpoint(&p, &mut optimizer, ckpt);
             println!("Resumed from {ckpt}");
         }
         p.to_device();
         let trainable = p.trainable();
-
-        let mut optimizer = AdamW::new(0.001, 0.9, 0.999, 1e-8, 1e-4);
         let epochs = 25;
 
         println!("Training CNN (3 conv + FC/BN/dropout, AdamW lr=0.001, batch={batch_size}, epochs={epochs})");
@@ -228,7 +239,7 @@ mod gpu_cnn {
             let avg = epoch_loss / nb as f32;
             let acc = evaluate(&test_images, &test_raw, &p, 500);
             println!("Epoch {epoch} done: avg loss {avg:.4}, test acc {:.2}% ({:.1}s)", acc * 100.0, start.elapsed().as_secs_f32());
-            save_checkpoint(&p, ckpt);
+            save_checkpoint(&p, &optimizer, ckpt);
         }
 
         println!("Final evaluation on full test set...");

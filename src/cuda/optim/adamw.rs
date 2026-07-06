@@ -4,6 +4,8 @@
 //! parameter, and the parameters update in place, nothing round-trips to host
 //! during training. Decoupled weight decay (the "W"): the decay is applied to the
 //! weights directly, not folded into the gradient.
+//! State can be exported and re-imported for checkpointing, so training
+//! resumes with the moments intact (see `export_state`/`import_state`).
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -63,7 +65,7 @@ impl AdamW {
     pub fn step(&mut self, params: &[Rc<RefCell<Node>>]) {
         let stream = backend::stream();
 
-        if self.t == 0 {
+        if self.m.is_empty() {
             for p in params {
                 let len: usize = p.borrow().shape.iter().product();
                 self.m.push(stream.alloc_zeros::<f32>(len).expect("adamw: m alloc failed"));
@@ -105,5 +107,38 @@ impl AdamW {
         }
 
         self.t += 1;
+    }
+
+    /// Downloads the optimizer state, the step counter and every moment
+    /// buffer, so it can be checkpointed alongside the parameters. The
+    /// tensors come back as all first moments in parameter order, then all
+    /// second moments. Empty if the optimizer hasn't stepped yet.
+    pub fn export_state(&self) -> (usize, Vec<Vec<f32>>) {
+        let stream = backend::stream();
+        let mut out = Vec::with_capacity(self.m.len() * 2);
+        for s in self.m.iter().chain(self.v.iter()) {
+            out.push(stream.clone_dtoh(s).expect("adamw: state dtoh failed"));
+        }
+        (self.t, out)
+    }
+
+    /// Restores state produced by [`export_state`](Self::export_state):
+    /// `moments` is every first moment in parameter order followed by every
+    /// second moment (so the count must be even), `t` the step counter. Call
+    /// before the first [`step`](Self::step); the buffers must match the
+    /// parameters that will be passed there.
+    pub fn import_state(&mut self, t: usize, moments: &[Vec<f32>]) {
+        assert!(moments.len() % 2 == 0, "adamw: moments must be all m's then all v's");
+        let stream = backend::stream();
+        let half = moments.len() / 2;
+        self.m = moments[..half]
+            .iter()
+            .map(|h| stream.clone_htod(h).expect("adamw: state htod failed"))
+            .collect();
+        self.v = moments[half..]
+            .iter()
+            .map(|h| stream.clone_htod(h).expect("adamw: state htod failed"))
+            .collect();
+        self.t = t;
     }
 }
