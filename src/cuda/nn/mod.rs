@@ -17,3 +17,5 @@ pub mod positional;     pub use positional::PositionalEncoding;
 pub mod self_attention; pub use self_attention::SelfAttention;
 pub mod multihead;      pub use multihead::MultiHeadAttention;
 pub mod transformer_block; pub use transformer_block::TransformerBlock;
+pub mod batchnorm2d;    pub use batchnorm2d::batchnorm2d;
+pub mod dropout2d;      pub use dropout2d::dropout2d;
