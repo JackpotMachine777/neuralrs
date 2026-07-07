@@ -2,7 +2,7 @@
 name = "neuralrs"
 version = "0.2.0"
 edition = "2024"
-description = "A deep learning library written from scratch in Rust — autograd, CNNs, RNNs, and Transformers"
+description = "A deep learning library written from scratch in Rust: autograd, CNNs, RNNs, and Transformers"
 license = "Apache-2.0"
 repository = "https://github.com/JackpotMachine777/neuralrs"
 readme = "README.md"
@@ -16,6 +16,7 @@ criterion = "0.5"
 rand = "0.8"
 rand_distr = "0.4"
 rayon = "1.10"
+safetensors = "0.8"
 matrixmultiply = { version = "0.3", optional = true }
 cudarc = { version = "0.19", features = ["cuda-version-from-build-system"], optional = true }
 

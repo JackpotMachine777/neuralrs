@@ -3,6 +3,7 @@ use crate::nn::module::Module;
 use crate::tensor::Tensor;
 use std::fs::{self, File};
 use std::io::{BufRead, BufReader, BufWriter, Write};
+use safetensors::tensor::{Dtype, SafeTensors, TensorView};
 
 /// Saves a single [`Linear`] layer's weights and bias to a file.
 ///
@@ -155,4 +156,84 @@ pub fn load_model<M: Module>(model: &mut M, path: &str) {
         assert_eq!(data.len(), p.storage.data.len(), "tensor size in file != size in model");
         p.storage.data.copy_from_slice(&data);
     }
+}
+
+/// A named tensor for [`save`]: `(name, shape, data)`.
+pub type NamedTensor<'a> = (&'a str, &'a [usize], &'a [f32]);
+
+/// Saves named tensors to `path`, picking the format from the extension:
+/// `.safetensors` writes the binary safetensors format (names, shapes, and
+/// dtype preserved, loadable from PyTorch and friends); anything else writes
+/// the positional text format of [`save_tensors`], dropping names and shapes.
+/// Both writes are atomic (tmp file + rename), so an interrupted save never
+/// truncates an existing checkpoint.
+pub fn save(tensors: &[NamedTensor], path: &str) {
+    if path.ends_with(".safetensors") {
+        save_safetensors(tensors, path);
+    } else {
+        let raw: Vec<&[f32]> = tensors.iter().map(|(_, _, d)| *d).collect();
+        save_tensors(&raw, path);
+    }
+}
+
+/// Loads tensors from `path`, picking the format from the extension. For
+/// `.safetensors` the real names and shapes come back, sorted by name; for
+/// the text format names are synthesized as `tensor_{i}` and the shape is
+/// the flat length.
+pub fn load(path: &str) -> Vec<(String, Vec<usize>, Vec<f32>)> {
+    if path.ends_with(".safetensors") {
+        load_safetensors(path)
+    } else {
+        load_tensors(path)
+            .into_iter()
+            .enumerate()
+            .map(|(i, d)| (format!("tensor_{i}"), vec![d.len()], d))
+            .collect()
+    }
+}
+
+fn save_safetensors(tensors: &[NamedTensor], path: &str) {
+    let bytes_per: Vec<Vec<u8>> = tensors
+        .iter()
+        .map(|(_, _, d)| d.iter().flat_map(|v| v.to_le_bytes()).collect())
+        .collect();
+    let views: Vec<(&str, TensorView)> = tensors
+        .iter()
+        .zip(&bytes_per)
+        .map(|((name, shape, _), bytes)| {
+            let view = TensorView::new(Dtype::F32, shape.to_vec(), bytes)
+                .expect("save: tensor shape does not match its data length");
+            (*name, view)
+        })
+        .collect();
+    let buffer =
+        safetensors::serialize(views, None).expect("save: safetensors serialization failed");
+
+    let tmp = format!("{path}.tmp");
+    fs::write(&tmp, &buffer).expect("save: cannot write file");
+    fs::rename(&tmp, path).expect("save: rename failed");
+}
+
+fn load_safetensors(path: &str) -> Vec<(String, Vec<usize>, Vec<f32>)> {
+    let buffer = fs::read(path).expect("load: cannot read file");
+    let st = SafeTensors::deserialize(&buffer).expect("load: not a valid safetensors file");
+    let mut out: Vec<(String, Vec<usize>, Vec<f32>)> = st
+        .tensors()
+        .into_iter()
+        .map(|(name, view)| {
+            assert_eq!(
+                view.dtype(),
+                Dtype::F32,
+                "load: only F32 tensors are supported (tensor `{name}`)"
+            );
+            let data = view
+                .data()
+                .chunks_exact(4)
+                .map(|c| f32::from_le_bytes([c[0], c[1], c[2], c[3]]))
+                .collect();
+            (name, view.shape().to_vec(), data)
+        })
+        .collect();
+    out.sort_by(|a, b| a.0.cmp(&b.0));
+    out
 }

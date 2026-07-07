@@ -2,4 +2,4 @@
 .vscode/
 
 /data/
-mnist_cnn_checkpoint.txt
+mnist_cnn_checkpoint.*

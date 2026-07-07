@@ -56,14 +56,9 @@ mod gpu_cnn {
             }
         }
 
-        /// Every parameter in a fixed order, the checkpoint file format
-        /// depends on this order staying stable.
+        /// Every parameter in the same fixed order, names dropped.
         fn all(&self) -> [&N; 14] {
-            [
-                &self.c1w, &self.c1b, &self.c2w, &self.c2b, &self.c3w, &self.c3b,
-                &self.l1w, &self.l1b, &self.bg, &self.bb, &self.brm, &self.brv,
-                &self.l2w, &self.l2b,
-            ]
+            self.named().map(|(_, n)| n)
         }
 
         /// Move every parameter (including BN running stats) to the device once.
@@ -80,6 +75,20 @@ mod gpu_cnn {
                 self.c1w.clone(), self.c1b.clone(), self.c2w.clone(), self.c2b.clone(),
                 self.c3w.clone(), self.c3b.clone(), self.l1w.clone(), self.l1b.clone(),
                 self.bg.clone(), self.bb.clone(), self.l2w.clone(), self.l2b.clone(),
+            ]
+        }
+
+        /// Every parameter with its checkpoint name, in a fixed order. Names
+        /// follow the PyTorch convention so the file opens cleanly elsewhere.
+        fn named(&self) -> [(&'static str, &N); 14] {
+            [
+                ("conv1.weight", &self.c1w), ("conv1.bias", &self.c1b),
+                ("conv2.weight", &self.c2w), ("conv2.bias", &self.c2b),
+                ("conv3.weight", &self.c3w), ("conv3.bias", &self.c3b),
+                ("fc1.weight", &self.l1w), ("fc1.bias", &self.l1b),
+                ("bn.gamma", &self.bg), ("bn.beta", &self.bb),
+                ("bn.running_mean", &self.brm), ("bn.running_var", &self.brv),
+                ("fc2.weight", &self.l2w), ("fc2.bias", &self.l2b),
             ]
         }
     }
@@ -150,34 +159,63 @@ mod gpu_cnn {
     }
 
     /// Saves every parameter (including BN running stats) plus the optimizer
-    /// state to a checkpoint, downloading everything from the device first.
-    /// Layout: 14 parameter tensors, then [t], then the AdamW moments (all
-    /// m's, then all v's). Atomic, see `save_tensors`.
+    /// state to a safetensors checkpoint, downloading everything from the
+    /// device first. Parameters carry PyTorch-style names; the AdamW state
+    /// rides along as `optim.t` and `optim.m.NN`/`optim.v.NN`. Atomic, see
+    /// `serialize::save`.
     fn save_checkpoint(p: &Params, optimizer: &AdamW, path: &str) {
-        let mut host: Vec<Vec<f32>> = p.all().iter().map(|n| gpu::to_host(n)).collect();
+        let mut host: Vec<(String, Vec<usize>, Vec<f32>)> = p
+            .named()
+            .iter()
+            .map(|(name, n)| (name.to_string(), n.borrow().shape.clone(), gpu::to_host(n)))
+            .collect();
+
         let (t, moments) = optimizer.export_state();
-        host.push(vec![t as f32]);   // exact for t < 2^24, far beyond any run here
-        host.extend(moments);
-        let refs: Vec<&[f32]> = host.iter().map(|v| v.as_slice()).collect();
-        serialize::save_tensors(&refs, path);
+        host.push(("optim.t".to_string(), vec![1], vec![t as f32]));   // exact for t < 2^24
+        let half = moments.len() / 2;
+        for (i, m) in moments.into_iter().enumerate() {
+            let name = if i < half {
+                format!("optim.m.{:02}", i)
+            } else {
+                format!("optim.v.{:02}", i - half)
+            };
+            let len = m.len();
+            host.push((name, vec![len], m));
+        }
+
+        let refs: Vec<serialize::NamedTensor> = host
+            .iter()
+            .map(|(n, s, d)| (n.as_str(), s.as_slice(), d.as_slice()))
+            .collect();
+        serialize::save(&refs, path);
     }
 
     /// Loads a checkpoint into freshly built params and, when present, the
-    /// optimizer state. Parameter-only checkpoints (the old layout) still
-    /// load, the optimizer then just starts with fresh moments. Call before
-    /// `to_device`.
+    /// optimizer state, everything looked up by name, so tensor order in
+    /// the file doesn't matter. Call before `to_device`.
     fn load_checkpoint(p: &Params, optimizer: &mut AdamW, path: &str) {
-        let loaded = serialize::load_tensors(path);
-        let nodes = p.all();
-        assert!(loaded.len() >= nodes.len(), "checkpoint has fewer tensors than the model");
-        for (node, data) in nodes.iter().zip(&loaded) {
+        let map: std::collections::HashMap<String, Vec<f32>> = serialize::load(path)
+            .into_iter()
+            .map(|(n, _, d)| (n, d))
+            .collect();
+
+        for (name, node) in p.named() {
+            let data = map
+                .get(name)
+                .unwrap_or_else(|| panic!("checkpoint is missing tensor `{name}`"));
             let mut n = node.borrow_mut();
-            assert_eq!(data.len(), n.data.len(), "checkpoint tensor size != model");
+            assert_eq!(data.len(), n.data.len(), "checkpoint tensor `{name}` has the wrong size");
             n.data.copy_from_slice(data);
         }
-        if loaded.len() > nodes.len() {
-            let t = loaded[nodes.len()][0] as usize;
-            optimizer.import_state(t, &loaded[nodes.len() + 1..]);
+
+        if let Some(t_tensor) = map.get("optim.t") {
+            let t = t_tensor[0] as usize;
+            let mut m_names: Vec<&String> = map.keys().filter(|k| k.starts_with("optim.m.")).collect();
+            let mut v_names: Vec<&String> = map.keys().filter(|k| k.starts_with("optim.v.")).collect();
+            m_names.sort();
+            v_names.sort();
+            let moments: Vec<Vec<f32>> = m_names.into_iter().chain(v_names).map(|k| map[k].clone()).collect();
+            optimizer.import_state(t, &moments);
             println!("Restored optimizer state (t = {t})");
         }
     }
@@ -194,7 +232,7 @@ mod gpu_cnn {
         let mut loader = DataLoader::new(train_images, train_labels, batch_size);
         loader.set_augment(Box::new(shift_image));
 
-        let ckpt = "mnist_cnn_checkpoint.txt";
+        let ckpt = "mnist_cnn_checkpoint.safetensors";
         let p = Params::init();
         let mut optimizer = AdamW::new(0.001, 0.9, 0.999, 1e-8, 1e-4);
         if std::path::Path::new(ckpt).exists() {

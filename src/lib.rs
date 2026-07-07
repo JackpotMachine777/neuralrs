@@ -19,6 +19,12 @@
 //! See the `examples/` directory for full training loops (MNIST CNN, with a
 //! fully GPU-resident variant under `--features cuda`, a Transformer on a
 //! toy task, and a minimal XOR net).
+//!
+//! Two on-disk formats are supported, picked by file extension in
+//! [`save`]/[`load`]: the human-readable positional text format (zero
+//! dependencies, git-diffable, no names or shapes) and `.safetensors`
+//! (binary, ~2.5x smaller, carries names, shapes, and dtype, and opens
+//! directly in PyTorch and other frameworks).
 
 // These clippy lints flag stylistic choices that are intentional in this codebase.
 // The autograd engine indexes parallel buffers (grad[i], data[i]) by hand for clarity,
