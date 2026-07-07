@@ -3,3 +3,4 @@
 
 /data/
 mnist_cnn_checkpoint.*
+cifar_cnn_checkpoint.*
