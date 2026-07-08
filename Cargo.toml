@@ -18,11 +18,12 @@ rand_distr = "0.4"
 rayon = "1.10"
 safetensors = "0.8"
 matrixmultiply = { version = "0.3", optional = true }
-cudarc = { version = "0.19", features = ["cuda-version-from-build-system"], optional = true }
+cudarc = { version = "0.19", features = ["cuda-version-from-build-system", "cublas"], optional = true }
 
 [features]
 blas = ["matrixmultiply"]
 cuda = ["dep:cudarc"]
+cublas = ["cuda"]
 
 [lints.clippy]
 needless_range_loop = "allow"

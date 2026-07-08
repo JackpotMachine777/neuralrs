@@ -12,6 +12,11 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+#[cfg(feature = "cublas")]
+use cudarc::cublas::{Gemm, GemmConfig};
+#[cfg(feature = "cublas")]
+use cudarc::cublas::sys::cublasOperation_t;
+
 use cudarc::driver::{CudaSlice, LaunchConfig, PushKernelArg};
 
 use crate::autograd::node::{GpuBuffers, Node};
@@ -260,7 +265,8 @@ crate::kernel_module!(KERNEL);
 
 /// Raw device-level GEMM on slices, shared with ops that lower to a matrix
 /// multiply (conv2d's im2col path). `kernel` picks the variant by name.
-pub(crate) fn mm(kernel: &str, a: &CudaSlice<f32>, b: &CudaSlice<f32>, rows: usize, cols: usize, inner: usize) -> CudaSlice<f32> {
+#[cfg(not(feature = "cublas"))]
+fn mm_own(kernel: &str, a: &CudaSlice<f32>, b: &CudaSlice<f32>, rows: usize, cols: usize, inner: usize) -> CudaSlice<f32> {
     let stream = backend::stream();
     let mut out = stream.alloc_zeros::<f32>(rows * cols).expect("cuda matmul: alloc failed");
 
@@ -284,6 +290,61 @@ pub(crate) fn mm(kernel: &str, a: &CudaSlice<f32>, b: &CudaSlice<f32>, rows: usi
     unsafe { builder.launch(cfg).expect("cuda matmul: launch failed"); }
 
     out
+}
+
+/// cuBLAS-backed GEMM. cuBLAS is column-major; our tensors are row-major, so
+/// to get the row-major product C[m,n] = A·B we ask cuBLAS for C^T = B^T·A^T,
+/// which is the same bytes with no transpose. The three variants differ only
+/// in how A and B are already laid out, which maps to transa/transb and the
+/// leading dimensions. Output C is row-major [rows, cols].
+#[cfg(feature = "cublas")]
+fn mm_cublas(kernel: &str, a: &CudaSlice<f32>, b: &CudaSlice<f32>, rows: usize, cols: usize, inner: usize) -> CudaSlice<f32> {
+    let stream = backend::stream();
+    let blas = backend::blas();
+    let mut out = stream.alloc_zeros::<f32>(rows * cols).expect("cuda matmul: alloc failed");
+
+    let (m, n, k) = (cols as i32, rows as i32, inner as i32); // computing C^T: (n x m) = (n x k)(k x m)
+    let n_op = cublasOperation_t::CUBLAS_OP_N;
+    let t_op = cublasOperation_t::CUBLAS_OP_T;
+
+    // For each variant we pass (B, A) as cuBLAS's (first, second) operand so the
+    // column-major result C^T lands as our row-major C.
+    let (transa, transb, lda, ldb) = match kernel {
+        // C[m,n] = A[m,k] · B[k,n]. B row-major [k,n] = col-major [n,k]: no-trans, ld=n(cols).
+        // A row-major [m,k] = col-major [k,m]: no-trans, ld=k(inner).
+        "matmul_nn" => (n_op, n_op, cols as i32, inner as i32),
+        // C[m,n] = A[m,k] · B[n,k]^T. B row-major [n,k] = col-major [k,n]; we need B^T in the
+        // C^T = B^T A^T form -> op_T, ld=k(inner). A as nn.
+        "matmul_nt" => (t_op, n_op, inner as i32, inner as i32),
+        // C[m,n] = A[k,m]^T · B[k,n]. B as nn (no-trans, ld=n). A row-major [k,m] = col-major
+        // [m,k]; need A^T -> op_T, ld=m(rows).
+        "matmul_tn" => (n_op, t_op, cols as i32, rows as i32),
+        other => panic!("mm_cublas: unknown kernel {other}"),
+    };
+
+    let cfg = GemmConfig {
+        transa,
+        transb,
+        m,
+        n,
+        k,
+        alpha: 1.0f32,
+        lda,
+        ldb,
+        beta: 0.0f32,
+        ldc: cols as i32,
+    };
+    unsafe {
+        blas.gemm(cfg, b, a, &mut out).expect("cuBLAS gemm failed");
+    }
+    out
+}
+
+pub(crate) fn mm(kernel: &str, a: &CudaSlice<f32>, b: &CudaSlice<f32>, rows: usize, cols: usize, inner: usize) -> CudaSlice<f32> {
+    #[cfg(feature = "cublas")]
+    { return mm_cublas(kernel, a, b, rows, cols, inner); }
+    #[cfg(not(feature = "cublas"))]
+    { mm_own(kernel, a, b, rows, cols, inner) }
 }
 
 /// Split-K GEMM for skinny outputs with a huge inner dimension (the conv
