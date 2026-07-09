@@ -342,7 +342,7 @@ fn mm_cublas(kernel: &str, a: &CudaSlice<f32>, b: &CudaSlice<f32>, rows: usize, 
 
 pub(crate) fn mm(kernel: &str, a: &CudaSlice<f32>, b: &CudaSlice<f32>, rows: usize, cols: usize, inner: usize) -> CudaSlice<f32> {
     #[cfg(feature = "cublas")]
-    { return mm_cublas(kernel, a, b, rows, cols, inner); }
+    { mm_cublas(kernel, a, b, rows, cols, inner) }
     #[cfg(not(feature = "cublas"))]
     { mm_own(kernel, a, b, rows, cols, inner) }
 }

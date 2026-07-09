@@ -1,6 +1,6 @@
 //! # NeuralRs
 //!
-//! A deep learning library written from scratch in Rust, its own autograd
+//! A deep learning library written from scratch in Rust, with its own autograd
 //! engine, a full neural-network stack, and a working Transformer.
 //!
 //! The pieces fit together in layers:
@@ -11,20 +11,20 @@
 //! - [`nn`] - layers, activations, and losses, all built on the autograd graph
 //!   (the usual entry point is [`nn::sequential::Sequential`])
 //! - [`optim`] - optimizers and learning-rate schedulers
-//! - [`data`] - a batching/shuffling data loader and MNIST reader
+//! - [`data`] - a batching/shuffling data loader with MNIST and CIFAR-10 readers
 //! - `cuda` (with `--features cuda`) - an optional resident GPU backend:
 //!   every op, layer, and optimizer above has a device twin, each
 //!   gradient-checked against the CPU implementation
 //!
 //! See the `examples/` directory for full training loops (MNIST CNN, with a
-//! fully GPU-resident variant under `--features cuda`, a Transformer on a
-//! toy task, and a minimal XOR net).
+//! fully GPU-resident variant under `--features cuda`, a CIFAR-10 CNN, a
+//! Transformer on a toy task, and a minimal XOR net), and `GUIDE.md` for a
+//! walkthrough of building and training your own model.
 //!
-//! Two on-disk formats are supported, picked by file extension in
-//! [`save`]/[`load`]: the human-readable positional text format (zero
-//! dependencies, git-diffable, no names or shapes) and `.safetensors`
-//! (binary, ~2.5x smaller, carries names, shapes, and dtype, and opens
-//! directly in PyTorch and other frameworks).
+//! Checkpoints save through [`serialize::save`] and [`serialize::load`], which
+//! pick the format by file extension: a human-readable positional text format
+//! (zero dependencies, git-diffable, no names or shapes) or `.safetensors`
+//! (binary, carries names, shapes, and dtype, and opens directly in PyTorch).
 
 // These clippy lints flag stylistic choices that are intentional in this codebase.
 // The autograd engine indexes parallel buffers (grad[i], data[i]) by hand for clarity,
